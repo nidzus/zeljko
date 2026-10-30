@@ -47,7 +47,7 @@ MAX_FAILURES = 5
 LOCKOUT_SECONDS = 15 * 60
 # The AGPL asks that people who use this over a network can get its source.
 # Point it at your own copy if you run a changed version.
-SOURCE_URL = os.environ.get("JYOTISHA_SOURCE_URL", "https://github.com/nidzus/jyotisha")
+SOURCE_URL = os.environ.get("JYOTISHA_SOURCE_URL", "https://github.com/nidzus/zeljko")
 
 INSTRUCTIONS = """START HERE
 

@@ -1,4 +1,4 @@
-# Jyotisha advisor
+# Zeljko, the jyotisha advisor
 
 A personal decision-support tool: questions are answered from a computed
 Vedic chart, with every claim tied to a computed fact. `README.md` has the
@@ -64,7 +64,7 @@ into their data folder. It is never committed.
 
 ## Version history and publishing
 
-- Public repository: github.com/nidzus/jyotisha, AGPL-3.0 (because of the
+- Public repository: github.com/nidzus/zeljko, AGPL-3.0 (because of the
   Swiss Ephemeris). Only app code is ever pushed.
 - `tools/check_clean.py` is the privacy check. It runs before every commit
   and every push (`tools/hooks/`, turned on by `jyotisha.py hooks`, which

@@ -1,6 +1,6 @@
-# Jyotisha advisor
+# Zeljko
 
-A decision-support tool that runs in your own Claude. Ask about a decision —
+A jyotisha (Vedic astrology) advisor that runs in your own Claude. Ask about a decision —
 take the job, move, commit, wait — and get an answer grounded in your
 computed Vedic chart, with every claim traceable to a computed fact. It keeps
 a journal of what was advised, what you chose and how it turned out, so you
@@ -55,7 +55,7 @@ You need:
 
 **The easy way:** open Claude Code in any folder and paste:
 
-> Install the jyotisha advisor from https://github.com/nidzus/jyotisha into
+> Install Zeljko, the jyotisha advisor, from https://github.com/nidzus/zeljko into
 > my home folder: clone it, run `jyotisha.py install` with Python 3.11, then
 > start `/jyotisha:onboard` for me.
 
@@ -63,8 +63,8 @@ You need:
 
 ```
 winget install Python.Python.3.11 Git.Git
-git clone https://github.com/nidzus/jyotisha.git %USERPROFILE%\jyotisha
-cd %USERPROFILE%\jyotisha
+git clone https://github.com/nidzus/zeljko.git %USERPROFILE%\zeljko
+cd %USERPROFILE%\zeljko
 py -3.11 jyotisha.py install
 ```
 
@@ -73,8 +73,8 @@ py -3.11 jyotisha.py install
 ```
 xcode-select --install
 brew install python@3.11
-git clone https://github.com/nidzus/jyotisha.git ~/jyotisha
-cd ~/jyotisha
+git clone https://github.com/nidzus/zeljko.git ~/zeljko
+cd ~/zeljko
 python3.11 jyotisha.py install
 ```
 
