@@ -112,9 +112,10 @@ Inside Claude Code:
 | `/jyotisha:journal` | review past advice, record choices and outcomes |
 
 The plugin bundles the MCP server, so there is nothing else to configure. To
-use the tools from plain Claude Desktop chat too, copy the `jyotisha` entry
-from `.mcp.json` (written by install) into Desktop's
-`claude_desktop_config.json`; `Repair paths` keeps it correct after that.
+use the tools from plain Claude Desktop chat too, double-click
+`Add to Claude Desktop` (`Mac/Add to Claude Desktop.command` on a Mac), then
+quit Claude Desktop fully and open it again. `Repair paths` keeps the entry
+correct after that.
 
 ## Commands
 

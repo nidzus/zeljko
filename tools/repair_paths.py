@@ -3,6 +3,7 @@
 Run after moving or renaming the app folder or the data folder:
 
     python jyotisha.py repair
+    python jyotisha.py repair --desktop    also add the advisor to Claude Desktop
 
 The folders' absolute paths are written into the "jyotisha" server entry of:
 
@@ -13,10 +14,11 @@ The folders' absolute paths are written into the "jyotisha" server entry of:
 
 The first two are written on each machine and never committed. Claude
 Desktop's file is looked for wherever this OS keeps it (on Windows both the
-ordinary install and the Microsoft Store one). Only an existing "jyotisha"
-entry is corrected there; one is never added. Everything else in that file --
-other MCP servers, other settings -- is left exactly as it was, and the file
-is copied to claude_desktop_config.json.bak-<date> before any change.
+ordinary install and the Microsoft Store one, including the newer
+Claude-Data folder). There an existing "jyotisha" entry is corrected, and
+one is added only with --desktop. Everything else in that file -- other MCP
+servers, other settings -- is left exactly as it was, and the file is copied
+to claude_desktop_config.json.bak-<date> before any change.
 
 When the paths are already correct nothing is written at all, so running it
 twice is safe.
@@ -50,8 +52,12 @@ def wanted() -> dict:
     }
 
 
-def desktop_configs() -> list[pathlib.Path]:
-    """Every Claude Desktop config on this machine."""
+def desktop_configs(installed: bool = False) -> list[pathlib.Path]:
+    """Every Claude Desktop config on this machine.
+
+    installed: also return configs not written yet, where Desktop's own
+    folder exists, so --desktop can create the file.
+    """
     found = []
     if sys.platform == "darwin":
         found.append(pathlib.Path.home() / "Library" / "Application Support"
@@ -61,9 +67,15 @@ def desktop_configs() -> list[pathlib.Path]:
         found.append(pathlib.Path(appdata) / "Claude" / "claude_desktop_config.json")
     local = os.environ.get("LOCALAPPDATA")
     if local:
-        # The Microsoft Store build keeps its own private copy of Roaming.
+        # The Microsoft Store build keeps its own private copy of Roaming,
+        # and newer versions move it out to Claude-Data.
         found.extend(sorted((pathlib.Path(local) / "Packages").glob(
             "Claude_*/LocalCache/Roaming/Claude*/claude_desktop_config.json")))
+        found.extend(sorted(p / "claude_desktop_config.json" for p in
+                            (pathlib.Path(local) / "Claude-Data").glob("claude_*")))
+    if installed:
+        return [p for p in found if p.exists() or
+                (p.parent.is_dir() and any(p.parent.iterdir()))]
     return [p for p in found if p.exists()]
 
 
@@ -128,7 +140,8 @@ def patch(path: pathlib.Path, label: str, *, create: bool, add: bool,
     return "changed"
 
 
-def main() -> int:
+def main(args: list[str] | None = None) -> int:
+    add_desktop = "--desktop" in (args or [])
     print(f"App folder:  {ROOT}")
     print(f"Data folder: {paths.data_dir()}")
     print()
@@ -142,12 +155,18 @@ def main() -> int:
               "installed plugin (.claude/skills)",
               create=False, add=True, backup=False),
     ]
-    desktops = desktop_configs()
+    desktops = desktop_configs(installed=add_desktop)
     if not desktops:
         print("  Claude Desktop config: not present, nothing to do")
+        if add_desktop:
+            print("  Claude Desktop does not seem to be installed. Install it,"
+                  " open it once, then run this again.")
     for path in desktops:
-        results.append(patch(path, "Claude Desktop config",
-                             create=False, add=False, backup=True))
+        # Claude-3p is Desktop's separate third-party-provider mode: an entry
+        # there is kept correct, but none is added.
+        add = add_desktop and not path.parent.name.endswith("-3p")
+        results.append(patch(path, f"Claude Desktop config ({path.parent.name})",
+                             create=add, add=add, backup=True))
 
     print()
     changed = results.count("changed")
@@ -156,6 +175,10 @@ def main() -> int:
         return 1
     if changed:
         print(f"{changed} file(s) corrected. Restart Claude so it reads them.")
+        if add_desktop:
+            print("For Claude Desktop, quit it fully, then open it again: on"
+                  " Windows right-click its icon by the clock and choose Quit,"
+                  " on a Mac press Cmd+Q.")
     else:
         print("Nothing needed changing. Everything already points here.")
 

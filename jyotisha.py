@@ -5,7 +5,8 @@
     python jyotisha.py where               show where everything is
     python jyotisha.py check               run every verification suite
     python jyotisha.py backup [--quiet]    dated copy of your database
-    python jyotisha.py repair              re-point the Claude config files
+    python jyotisha.py repair [--desktop]  re-point the Claude config files
+                                           (--desktop: add to Claude Desktop)
     python jyotisha.py journal             the web app, opened in a browser
     python jyotisha.py accounts [...]      invite and manage friends' accounts
     python jyotisha.py serve               the shared server for friends
@@ -280,9 +281,9 @@ def backup(args: list[str]) -> int:
     return 0 if ok else 1
 
 
-def repair(_args: list[str]) -> int:
+def repair(args: list[str]) -> int:
     from tools import repair_paths
-    return repair_paths.main()
+    return repair_paths.main(args)
 
 
 def journal(_args: list[str]) -> int:

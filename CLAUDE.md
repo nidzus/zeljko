@@ -88,10 +88,12 @@ into their data folder. It is never committed.
   edit them by hand.
 - The repair also corrects the installed plugin copy at
   `~/.claude/skills/jyotisha/.mcp.json` and an existing `jyotisha` entry in
-  Claude Desktop's `claude_desktop_config.json` (on Windows both the ordinary
-  and the Microsoft Store location, on a Mac `~/Library/Application
-  Support/Claude`). It copies that file to `.bak-<date>` first, never adds an
-  entry, and writes nothing when the paths already agree.
+  Claude Desktop's `claude_desktop_config.json` (on Windows the ordinary
+  location, the Microsoft Store one and the newer
+  `%LOCALAPPDATA%\Claude-Data\claude_*`; on a Mac `~/Library/Application
+  Support/Claude`). It copies that file to `.bak-<date>` first, adds an entry
+  only with `--desktop` (the `Add to Claude Desktop` files), and writes
+  nothing when the paths already agree.
 - A venv is not relocatable. If the app folder moves, `Repair paths` fixes
   the configs and `Install or repair` rebuilds `.venv`.
 
