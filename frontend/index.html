@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jyotisha</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>Jyotisha</h1>
+  <nav id="people"></nav>
+  <button id="add-person" class="ghost">Add person</button>
+</header>
+
+<main>
+
+  <!-- ONBOARDING -------------------------------------------------------- -->
+  <section id="onboarding" hidden>
+    <ol class="steps">
+      <li data-step="1" class="active">Who</li>
+      <li data-step="2">Where</li>
+      <li data-step="3">When</li>
+      <li data-step="4">How sure</li>
+      <li data-step="5">Life events</li>
+    </ol>
+
+    <div class="panel" data-panel="1">
+      <h2>Who is this chart for?</h2>
+      <label>Name <input id="p-name" type="text" placeholder="Your name"></label>
+      <label>Relation
+        <select id="p-relation">
+          <option value="self">Myself</option>
+          <option value="partner">Partner</option>
+          <option value="family">Family</option>
+          <option value="friend">Friend</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <div class="actions"><button data-next="2">Continue</button></div>
+    </div>
+
+    <div class="panel" data-panel="2" hidden>
+      <h2>Where were they born?</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="city">Search a city</button>
+        <button class="tab" data-tab="coords">Paste coordinates</button>
+      </div>
+
+      <div data-tabpanel="city">
+        <label>City <input id="place-q" type="text" placeholder="Belgrade"
+                          autocomplete="off"></label>
+        <ul id="place-results" class="results"></ul>
+      </div>
+
+      <div data-tabpanel="coords" hidden>
+        <p class="hint">Right-click a spot in Google Maps and copy the numbers.
+          Any format works &mdash; <code>44.7866, 20.4489</code> or
+          <code>44&deg;47'11"N 20&deg;26'56"E</code>.</p>
+        <label>Coordinates
+          <input id="coord-text" type="text" placeholder="44.7866, 20.4489"></label>
+        <label>Place name
+          <input id="coord-name" type="text" placeholder="Village, country"></label>
+        <div class="actions"><button id="coord-check" class="ghost">Check</button></div>
+        <p id="coord-out" class="note"></p>
+      </div>
+
+      <p id="place-chosen" class="chosen" hidden></p>
+      <div class="actions">
+        <button data-back="1" class="ghost">Back</button>
+        <button data-next="3" id="place-next" disabled>Continue</button>
+      </div>
+    </div>
+
+    <div class="panel" data-panel="3" hidden>
+      <h2>When?</h2>
+      <p class="hint">Local clock time at the birthplace, as it was recorded.
+        We handle the timezone rules that were in force that day.</p>
+      <label>Date <input id="b-date" type="date"></label>
+      <label>Time <input id="b-time" type="time" step="1"></label>
+      <div class="actions">
+        <button data-back="2" class="ghost">Back</button>
+        <button data-next="4">Continue</button>
+      </div>
+    </div>
+
+    <div class="panel" data-panel="4" hidden>
+      <h2>How well is that time known?</h2>
+      <p class="hint">This is not a formality. It decides what the app is
+        allowed to tell you &mdash; and it will refuse to answer beyond what
+        your birth time can actually support.</p>
+      <div id="confidence-options" class="options"></div>
+      <label>Ayanamsa
+        <select id="b-ayanamsa"></select>
+      </label>
+      <div class="actions">
+        <button data-back="3" class="ghost">Back</button>
+        <button id="save-chart">Create chart</button>
+      </div>
+      <p id="chart-warn" class="warn" hidden></p>
+    </div>
+
+    <div class="panel" data-panel="5" hidden>
+      <h2>A few dated life events</h2>
+      <p class="hint">Five to ten is plenty. Job changes, moves, marriages,
+        losses, the years things turned. These give the advisor a history to
+        reason from, and later they are what a birth-time rectification is
+        tested against.</p>
+      <div class="event-form">
+        <input id="e-date" type="date">
+        <input id="e-title" type="text" placeholder="What happened">
+        <select id="e-category">
+          <option value="">Area</option>
+          <option value="career">Career</option>
+          <option value="relationship">Relationship</option>
+          <option value="health">Health</option>
+          <option value="relocation">Relocation</option>
+          <option value="finance">Finance</option>
+          <option value="family">Family</option>
+        </select>
+        <button id="add-event" class="ghost">Add</button>
+      </div>
+      <ul id="event-list" class="results"></ul>
+      <div class="actions"><button id="finish">Done</button></div>
+    </div>
+  </section>
+
+  <!-- WORKSPACE --------------------------------------------------------- -->
+  <section id="workspace" hidden>
+    <aside id="now">
+      <h2>Now</h2>
+      <div id="dasha-now"></div>
+      <h3>What this chart can support</h3>
+      <div id="reliability"></div>
+    </aside>
+
+    <div id="centre">
+      <div class="tabs" id="centre-tabs">
+        <button class="tab active" data-view="journal">Journal</button>
+        <button class="tab" data-view="chart">Chart</button>
+      </div>
+      <div data-viewpanel="journal">
+        <div id="journal"></div>
+      </div>
+      <div data-viewpanel="chart" hidden>
+        <div id="chart-head"></div>
+        <div id="chart-svg"></div>
+        <table id="positions"></table>
+      </div>
+    </div>
+
+    <aside id="side">
+      <h2>Coming up</h2>
+      <div id="timeline"></div>
+    </aside>
+  </section>
+
+  <p id="empty" class="empty">No profiles yet. Add one to begin.</p>
+
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

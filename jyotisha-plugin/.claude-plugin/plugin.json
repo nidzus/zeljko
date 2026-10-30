@@ -1,0 +1,12 @@
+{
+  "name": "jyotisha",
+  "description": "A jyotisha advisor for decisions. Computes charts, dashas and transits exactly, refuses claims the birth time cannot support, and keeps a journal of what was advised, chosen and how it turned out.",
+  "version": "1.0.0",
+  "author": {
+    "name": "nidzus",
+    "url": "https://github.com/nidzus"
+  },
+  "homepage": "https://github.com/nidzus/jyotisha",
+  "repository": "https://github.com/nidzus/jyotisha",
+  "license": "AGPL-3.0-only"
+}

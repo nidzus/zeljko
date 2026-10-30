@@ -1,0 +1,31 @@
+# Personal data never lives in the app folder: it is in the data folder (see
+# backend/paths.py). These patterns are a second line of defence, and
+# tools/check_clean.py the third.
+/data/
+/exports/
+/readings/
+/Website/
+*.db
+*.db.bak*
+*.pdf
+.env
+private-words.txt
+CLAUDE.local.md
+.jyotisha.json
+
+# Written on each machine by tools/repair_paths.py; they hold its paths.
+/.mcp.json
+/jyotisha-plugin/.mcp.json
+
+# The environment. Rebuilt by "Install or repair"; never tracked.
+.venv/
+.venv-old/
+__pycache__/
+*.pyc
+
+# Per-machine Claude Code settings.
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db

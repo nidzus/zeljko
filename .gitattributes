@@ -1,0 +1,6 @@
+# Batch files only run correctly with Windows line endings.
+*.bat text eol=crlf
+
+# Mac double-click files and git hooks only run with Unix line endings.
+*.command text eol=lf
+tools/hooks/* text eol=lf

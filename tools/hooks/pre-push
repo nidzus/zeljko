@@ -1,0 +1,9 @@
+#!/bin/sh
+# Privacy check on every tracked file before anything leaves this machine.
+# If it cannot run, the push is refused rather than let through unchecked.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+if [ -x .venv/Scripts/python.exe ]; then PY=.venv/Scripts/python.exe
+elif [ -x .venv/bin/python ]; then PY=.venv/bin/python
+else PY=python3
+fi
+exec "$PY" tools/check_clean.py --all

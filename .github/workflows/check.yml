@@ -1,0 +1,26 @@
+# Installs from scratch and runs every suite, on Windows and on a Mac, the way
+# a person would: "python jyotisha.py install". Only made-up test data is
+# involved; there is no personal data on these machines.
+name: check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  install-and-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install and run every suite
+        run: python jyotisha.py install
