@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zeljko, the jyotisha advisor for Claude</title>
+<meta name="description" content="Ask about a decision and get an answer from your computed Vedic chart, inside your own Claude. Free, and your data stays on your computer.">
+<link rel="icon" href="icon.png">
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d1b16;--soft:#5d584c;--line:#ddd7c9;
+ --accent:#4a2d7a;--on:#fff;--gold:#b8860b;--note:#f1eee6}
+@media (prefers-color-scheme:dark){:root{--bg:#17141d;--card:#211c2b;--ink:#ece8df;
+ --soft:#aaa394;--line:#3a3347;--accent:#8f6bd1;--on:#14101b;--gold:#e9c46a;--note:#2a2436}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:42rem;margin:0 auto;padding:2.5rem 16px 4rem}
+header{text-align:center;margin-bottom:2rem}
+header img{width:88px;height:88px}
+h1{font-size:1.9rem;line-height:1.2;margin:.6rem 0 .4rem}
+h2{font-size:1.25rem;margin:2.4rem 0 .6rem}
+p{margin:.6rem 0}
+.lead{font-size:1.1rem;color:var(--soft);max-width:34rem;margin:0 auto}
+.step{background:var(--card);border:1px solid var(--line);border-radius:12px;
+ padding:1.1rem 1.25rem;margin:1rem 0;display:grid;grid-template-columns:2.4rem 1fr;gap:.2rem .8rem}
+.n{grid-row:1/9;width:2.2rem;height:2.2rem;border-radius:50%;background:var(--accent);
+ color:var(--on);font-weight:700;display:grid;place-items:center}
+.step h3{margin:.15rem 0 .2rem;font-size:1.08rem}
+.step>p,.step>div{grid-column:2;margin:.25rem 0}
+.buttons{display:flex;flex-wrap:wrap;gap:.6rem;margin:.6rem 0}
+a.dl{display:inline-block;padding:.7rem 1.1rem;border-radius:8px;text-decoration:none;
+ border:2px solid var(--accent);color:var(--accent);font-weight:600}
+a.dl.mine{background:var(--accent);color:var(--on)}
+a.dl small{display:block;font-weight:400;font-size:.8rem;opacity:.85}
+.say{background:var(--note);border-left:4px solid var(--gold);border-radius:6px;
+ padding:.55rem .9rem;margin:.5rem 0;font-style:italic}
+.small{font-size:.92rem;color:var(--soft)}
+ul{padding-left:1.2rem;margin:.4rem 0}li{margin:.3rem 0}
+a{color:var(--accent)}
+footer{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <img src="icon.png" alt="">
+  <h1>Zeljko, the jyotisha advisor</h1>
+  <p class="lead">Ask about a decision &mdash; take the job, move, commit, wait &mdash;
+  and get a plain answer from your computed Vedic chart, inside your own Claude.
+  It keeps a journal of what it advised and how things turned out.</p>
+</header>
+
+<h2>Install it in four steps</h2>
+
+<section class="step">
+  <div class="n">1</div>
+  <h3>Have Claude Desktop</h3>
+  <p>Zeljko is an add-on for the Claude app on your computer. If you do not have
+  the app yet, get it from <a href="https://claude.ai/download">claude.ai/download</a>,
+  install it and sign in. It does not work in the Claude website or the phone app.</p>
+</section>
+
+<section class="step">
+  <div class="n">2</div>
+  <h3>Download Zeljko for your computer</h3>
+  <div class="buttons">
+    <a class="dl" data-os="windows" href="https://github.com/nidzus/zeljko/releases/latest/download/zeljko-windows.mcpb">Windows<small>Windows 10 or 11</small></a>
+    <a class="dl" data-os="mac" href="https://github.com/nidzus/zeljko/releases/latest/download/zeljko-mac-apple-silicon.mcpb">Mac<small>Apple chip (M1 and later)</small></a>
+    <a class="dl" href="https://github.com/nidzus/zeljko/releases/latest/download/zeljko-mac-intel.mcpb">Mac<small>Intel chip</small></a>
+  </div>
+  <p class="small" id="hint">Not sure which Mac you have? Click the Apple menu at the
+  top left, then <em>About This Mac</em>. If it says &ldquo;Chip: Apple M&hellip;&rdquo;
+  take the first Mac file; if it says &ldquo;Processor: &hellip; Intel&rdquo; take the second.</p>
+  <p class="small">The file is about 100&nbsp;MB, because it carries everything it
+  needs. Nothing else has to be installed.</p>
+</section>
+
+<section class="step">
+  <div class="n">3</div>
+  <h3>Open the file you downloaded</h3>
+  <p>Double-click it. Claude Desktop opens and shows Zeljko with an
+  <strong>Install</strong> button. Click it.</p>
+  <p>It asks for two folders: where to keep your data and where backups go. The
+  suggested places are fine &mdash; just continue.</p>
+  <p class="small">If double-clicking does nothing: open Claude Desktop, go to
+  <em>Settings</em>, then <em>Extensions</em>, and drag the downloaded file onto
+  that page. Claude may warn that the extension is not from a verified
+  company; that is expected, since this is free software made by one person.</p>
+</section>
+
+<section class="step">
+  <div class="n">4</div>
+  <h3>Say hello</h3>
+  <p>Start a new chat in Claude Desktop and type:</p>
+  <div class="say">Set me up with Zeljko.</div>
+  <p>It will ask when and where you were born, how sure you are of the time,
+  and for a few dated events from your life. Then you can ask it things.</p>
+</section>
+
+<h2>Things you can say</h2>
+<div class="say">Should I accept the offer, or wait until next year?</div>
+<div class="say">Is this week a good one to sign the contract?</div>
+<div class="say">Why have the last two years been so heavy?</div>
+<div class="say">Add my partner.</div>
+<div class="say">Show me what you advised before, and let me tell you how it went.</div>
+<div class="say">My birth year is wrong, it should be 1976.</div>
+<div class="say">Back up my data.</div>
+<div class="say">Remove my brother&rsquo;s profile.</div>
+<p class="small">The first time it uses a tool, Claude asks your permission.
+Choosing &ldquo;Always allow&rdquo; saves you being asked again.</p>
+
+<h2>What to expect from it</h2>
+<ul>
+  <li><strong>The answer first, in plain words</strong>, then the timing, then
+  the reasoning, with each technical term explained as it comes up.</li>
+  <li><strong>The astronomy is calculated, not guessed.</strong> Positions and
+  dates come from the Swiss Ephemeris running on your computer. Claude
+  interprets them; it never makes up a number.</li>
+  <li><strong>It is honest about your birth time.</strong> If you only know it
+  roughly, it refuses the claims that depend on the exact minute instead of
+  pretending.</li>
+  <li><strong>It is blunt.</strong> Difficult periods are described as plainly
+  as good ones.</li>
+</ul>
+<p><strong>This is a tool for thinking a decision through. It is not medical,
+legal, financial or any other professional advice, and it can be wrong.</strong></p>
+
+<h2>Your data</h2>
+<ul>
+  <li>Your birth details, life events and journal are stored in one folder on
+  your own computer (normally <em>jyotisha-data</em> in your home folder). The
+  extension sends them nowhere and has no account or server of its own.</li>
+  <li>Claude itself sees what you discuss with it, exactly as with anything
+  else you type into Claude.</li>
+  <li>Before a profile is corrected or removed, a copy of your data is set
+  aside automatically in that folder, so a mistake can be undone.</li>
+  <li>Say <em>&ldquo;back up my data&rdquo;</em> now and then. For protection
+  against the computer failing, point the backup folder at a USB stick or a
+  cloud-synced folder (Claude Desktop &rarr; Settings &rarr; Extensions &rarr; Zeljko).</li>
+</ul>
+
+<h2>Updating and removing</h2>
+<p>To update, download the newest file from this page and open it the same way.
+Your data is not touched. To remove Zeljko, uninstall it in Claude Desktop
+under Settings &rarr; Extensions; your data folder stays until you delete it yourself.</p>
+
+<footer class="small">
+  <p>Free software under the AGPL-3.0, built on the Swiss Ephemeris.
+  <a href="https://github.com/nidzus/zeljko">Source code</a> &middot;
+  <a href="https://github.com/nidzus/zeljko/releases">All versions</a> &middot;
+  <a href="https://github.com/nidzus/zeljko/issues">Report a problem</a></p>
+  <p>Comfortable with a command line? The same advisor also runs as a Claude
+  Code plugin; see the <a href="https://github.com/nidzus/zeljko#readme">README</a>.</p>
+</footer>
+</main>
+<script>
+(function () {
+  var ua = navigator.userAgent || "", os = /Windows/.test(ua) ? "windows" : /Mac OS X|Macintosh/.test(ua) ? "mac" : "";
+  if (!os) return;
+  var mine = document.querySelector('a.dl[data-os="' + os + '"]');
+  if (mine) mine.classList.add("mine");
+  if (os === "windows") document.getElementById("hint").hidden = true;
+})();
+</script>
+</body>
+</html>

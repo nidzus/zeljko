@@ -23,6 +23,11 @@ CLAUDE.local.md
 __pycache__/
 *.pyc
 
+# The built Claude Desktop extension. Published as a GitHub Release, not here.
+/build/
+/dist/
+*.mcpb
+
 # Per-machine Claude Code settings.
 .claude/settings.local.json
 

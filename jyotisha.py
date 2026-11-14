@@ -11,16 +11,15 @@
     python jyotisha.py accounts [...]      invite and manage friends' accounts
     python jyotisha.py serve               the shared server for friends
     python jyotisha.py hooks               turn on the privacy check before commits
+    python jyotisha.py extension           build the Claude Desktop extension (.mcpb)
 
 On a Mac use python3. The double-click files in this folder (Windows) and in
 Mac/ call these. Standard library only, so it runs before .venv exists.
 """
 from __future__ import annotations
 
-import datetime as dt
 import json
 import shutil
-import sqlite3
 import subprocess
 import sys
 import threading
@@ -244,41 +243,10 @@ def backup(args: list[str]) -> int:
     even if Claude has the database open. A second run on the same day
     replaces that day's copy.
     """
-    src = paths.data_dir() / "jyotisha.db"
-    dest = paths.backup_dir()
-    stamp = dt.date.today().isoformat()
-    out = dest / f"jyotisha-{stamp}.db"
-    log = dest / "backup-log.txt"
-    ok = False
-    if not src.exists():
-        print(f"The database is missing:\n  {src}\nNothing was copied.")
-    else:
-        try:
-            dest.mkdir(parents=True, exist_ok=True)
-        except OSError:
-            print(f"Cannot reach the backup folder:\n  {dest}")
-            print("If that is a USB or external drive, plug it in and run this again.")
-        else:
-            tmp = out.with_suffix(".tmp")
-            try:
-                s = sqlite3.connect(src.as_uri() + "?mode=ro", uri=True)
-                d = sqlite3.connect(tmp)
-                try:
-                    s.backup(d)
-                finally:
-                    s.close()
-                    d.close()
-                tmp.replace(out)
-                ok = True
-                print(f"Backed up to:\n  {out}")
-            except (sqlite3.Error, OSError) as exc:
-                print(f"The copy failed ({exc}). Nothing was written.")
-                tmp.unlink(missing_ok=True)
-    if dest.exists():
-        now = dt.datetime.now().strftime("%H:%M:%S")
-        with log.open("a", encoding="utf-8") as fh:
-            fh.write(f"{stamp} {now} {'OK  ' if ok else 'FAILED'} {out if ok else ''}\n")
-    return 0 if ok else 1
+    from backend import backup as backups   # standard library only
+    result = backups.run()
+    print(result["message"])
+    return 0 if result["ok"] else 1
 
 
 def repair(args: list[str]) -> int:
@@ -308,6 +276,18 @@ def serve(_args: list[str]) -> int:
     return run([VPY, "-m", "backend.remote"])
 
 
+def extension(_args: list[str]) -> int:
+    """Build the Claude Desktop extension for this computer, into dist/."""
+    if not need_venv():
+        return 1
+    if subprocess.run([str(VPY), "-c", "import PyInstaller"],
+                      capture_output=True).returncode != 0:
+        print("Installing the build tool (once)...")
+        if run([VPY, "-m", "pip", "install", "-r", "requirements-build.txt"]) != 0:
+            return 1
+    return run([VPY, "tools/build_extension.py"])
+
+
 def hooks(_args: list[str]) -> int:
     """Run the privacy check before every commit and push."""
     if not (APP / ".git").exists():
@@ -320,7 +300,8 @@ def hooks(_args: list[str]) -> int:
 
 COMMANDS = {"install": install, "init": init, "where": where, "check": check,
             "backup": backup, "repair": repair, "journal": journal,
-            "accounts": accounts, "serve": serve, "hooks": hooks}
+            "accounts": accounts, "serve": serve, "hooks": hooks,
+            "extension": extension}
 
 
 def main() -> int:

@@ -223,6 +223,52 @@ class Store:
             raise KeyError(f"no person with id {person_id}")
         return row
 
+    def update_person(self, person_id: int, name: str | None = None,
+                      relation: str | None = None) -> None:
+        """Correct a profile's name or relation. Birth data is never edited:
+        that is a new chart version, through add_chart."""
+        self._own_person(person_id)
+        if name is not None and not name.strip():
+            raise ValueError("name must not be empty")
+        with self._lock:
+            if name is not None:
+                self.db.execute("UPDATE person SET name=? WHERE id=?",
+                                (name.strip(), person_id))
+            if relation is not None:
+                self.db.execute("UPDATE person SET relation=? WHERE id=?",
+                                (relation, person_id))
+            self.db.commit()
+
+    def holdings(self, person_id: int) -> dict:
+        """How much is stored under a profile: what removing it would take."""
+        self._own_person(person_id)
+        count = lambda table: self.db.execute(  # noqa: E731
+            f"SELECT COUNT(*) FROM {table} WHERE person_id=?",
+            (person_id,)).fetchone()[0]
+        return {"chart_versions": count("chart"),
+                "life_events": count("life_event"),
+                "decisions": count("decision")}
+
+    def delete_person(self, person_id: int) -> None:
+        """Remove a profile and everything under it: charts, life events,
+        conversations and journal entries. There is no undo here -- take
+        safety_copy() first."""
+        self._own_person(person_id)
+        with self._lock:
+            self.db.execute("DELETE FROM person WHERE id=? AND account_id=?",
+                            (person_id, self.account_id))
+            self.db.commit()
+
+    def safety_copy(self, reason: str) -> Path | None:
+        """A copy of a personal database in archive/ beside it, taken before a
+        corrective change. The shared database is not copied for one
+        account's change, so there this returns None."""
+        if self.shared:
+            return None
+        from . import backup
+        self.db.commit()
+        return backup.safety_copy(self.path, reason)
+
     # ---------------------------------------------------------------- charts
 
     def add_chart(

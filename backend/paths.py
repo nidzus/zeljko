@@ -4,7 +4,8 @@ The app folder is a public repository. Everything that belongs to the person
 running it -- the databases, the API key, readings, exports -- lives in a
 separate data folder, found in this order:
 
-    JYOTISHA_HOME     an environment variable, when set
+    JYOTISHA_HOME     an environment variable, when set (the Claude Desktop
+                      extension sets it from its own settings)
     .jyotisha.json    in the app folder, written by `jyotisha.py init`
     ~/jyotisha-data   otherwise
 
@@ -31,8 +32,16 @@ def _link() -> dict:
         return {}
 
 
+def _env(name: str) -> str | None:
+    """An environment variable, or None when it is unset or was never filled
+    in -- the Claude Desktop extension passes settings through as "${...}"
+    placeholders, and one left blank can arrive still looking like that."""
+    value = (os.environ.get(name) or "").strip()
+    return None if not value or "${" in value else value
+
+
 def data_dir() -> Path:
-    env = os.environ.get("JYOTISHA_HOME")
+    env = _env("JYOTISHA_HOME")
     if env:
         return Path(env).expanduser()
     linked = _link().get("data")
@@ -63,7 +72,9 @@ def settings() -> dict:
 
 
 def backup_dir() -> Path:
-    chosen = settings().get("backup_folder")
+    """Where routine backups go: settings.json in the data folder, then the
+    JYOTISHA_BACKUPS variable (the extension's own setting), then the default."""
+    chosen = settings().get("backup_folder") or _env("JYOTISHA_BACKUPS")
     return Path(chosen).expanduser() if chosen else DEFAULT_BACKUPS
 
 

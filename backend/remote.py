@@ -474,37 +474,7 @@ def build(accounts: Accounts, public_url: str) -> MCPServer:
     for fn in mcp_server.TOOLS:
         server.tool()(fn)
 
-    @server.tool()
-    def guidance(topic: str) -> str:
-        """How to do the three things this advisor is for. Read the relevant
-        one before doing it for the first time in a conversation.
-
-        topic is "onboard" (set up a profile: birth data, how well the time is
-        known, life events), "ask" (advise on a decision) or "journal" (review
-        past advice, record choices and outcomes).
-        """
-        try:
-            return guides.text(topic)
-        except ValueError as exc:
-            raise ToolError(str(exc)) from None
-
-    @server.prompt(name="onboard", title="Set up a profile",
-                   description="Add yourself or someone close to you: birth "
-                               "data, how well the time is known, life events.")
-    def onboard() -> str:
-        return guides.text("onboard")
-
-    @server.prompt(name="ask", title="Ask about a decision",
-                   description="Get a timed answer on a choice you are weighing.")
-    def ask(question: str = "") -> str:
-        return guides.text("ask", question)
-
-    @server.prompt(name="journal", title="Review the journal",
-                   description="Look back over past advice and record how "
-                               "things turned out.")
-    def journal() -> str:
-        return guides.text("journal")
-
+    guides.attach(server)
     _add_pages(server, provider)
     mcp_server._session_store = Sessions(accounts)
     return server

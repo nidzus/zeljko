@@ -264,8 +264,10 @@ try:
     check("the guidance tool serves the onboarding steps",
           not err and "How well that time is known" in guide)
     tools = A.rpc("tools/list").json()["result"]["tools"]
-    check("all twenty-seven tools are there, plus guidance", len(tools) == 28,
-          f"{len(tools)} tools")
+    check("all twenty-nine shared tools are there, plus guidance",
+          len(tools) == 30, f"{len(tools)} tools")
+    check("the backup tool, which is for a database of one's own, is not",
+          "back_up_data" not in {t["name"] for t in tools})
 
     print()
     print("=" * 72)

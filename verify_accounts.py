@@ -188,6 +188,9 @@ def probes(pid, cid, conv, did):
     """Each method reaching for the given ids, as A."""
     return {
         "person": lambda: A.person(pid),
+        "update_person": lambda: A.update_person(pid, name="planted"),
+        "holdings": lambda: A.holdings(pid),
+        "delete_person": lambda: A.delete_person(pid),
         "add_chart": lambda: A.add_chart(pid, 1990, 1, 1, 1, 1, 0, "x", *BG,
                                          TimeConfidence.EXACT),
         "active_chart_row": lambda: A.active_chart_row(pid),
@@ -213,6 +216,8 @@ NO_ID = {
     "close": "closes the connection",
     "people": "lists the caller's own profiles (checked in section 4)",
     "add_person": "creates a profile in the caller's own account",
+    "safety_copy": "copies a personal database; does nothing in the shared "
+                   "one (checked below)",
     "compute": "pure arithmetic on a row the caller already holds",
     "dasha_tree": "pure arithmetic on a row the caller already holds",
     "reliability": "pure arithmetic on a row the caller already holds",
@@ -260,6 +265,20 @@ check("A's chart cannot be hung on B's person, nor B's chart on A's decision",
 check("a decision cannot be filed under someone else's conversation",
       raises(KeyError, lambda: A.record_decision(
           a["pid"], a["cid"], "x", conversation_id=b["conv"])))
+check("no copy of the shared database is made for one account's change",
+      A.safety_copy("probe") is None and not (shared.parent / "archive").exists())
+extra = A.add_person("Ana Spare", relation="friend")
+A.add_chart(extra, 1991, 2, 3, 4, 5, 0, "Sparetown", *BG, TimeConfidence.EXACT)
+A.add_life_event(extra, "2015-05-05", "Spare event")
+A.update_person(extra, name="Ana Spare Renamed")
+check("an account may rename and remove a profile of its own",
+      A.person(extra)["name"] == "Ana Spare Renamed"
+      and A.holdings(extra) == {"chart_versions": 1, "life_events": 1,
+                                "decisions": 0})
+A.delete_person(extra)
+check("and removing it takes nothing else with it",
+      [p["name"] for p in A.people()] == ["Ana Private"]
+      and len(A.decisions(a["pid"])) == 1 and snapshot() == state)
 check("the settings table is closed to accounts",
       raises(PermissionError, lambda: A.set("k", "v"))
       and raises(PermissionError, lambda: A.get("mode")))

@@ -1,0 +1,94 @@
+# Publishes the Claude Desktop extension.
+#
+# The version is the "version" line in extension/manifest.json. Whenever main
+# holds a version that has no release yet, this builds the extension on
+# Windows, an Apple-silicon Mac and an Intel Mac, tries each built program,
+# and publishes the three files as release v<version>. So: to release, raise
+# the version number and push. A push that leaves the version alone does
+# nothing here.
+#
+# The download page (docs/index.html, served by GitHub Pages) links to
+# releases/latest/download/<file>, so it always hands out the newest one.
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      needed: ${{ steps.v.outputs.needed }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('extension/manifest.json'))['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$version is already released. Nothing to do."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "v$version has no release yet. Building it."
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.needed == 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install and run every suite
+        run: python jyotisha.py install
+      - name: Build the extension and try the built program
+        run: python jyotisha.py extension
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-${{ matrix.os }}
+          path: dist/*.mcpb
+          if-no-files-found: error
+
+  publish:
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          ls -l dist
+          test "$(ls dist/*.mcpb | wc -l)" -eq 3
+          gh release create "v$VERSION" dist/*.mcpb \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Zeljko $VERSION" --generate-notes \
+            --notes "Install from https://nidzus.github.io/zeljko/ — pick the file for your computer and open it with Claude Desktop."

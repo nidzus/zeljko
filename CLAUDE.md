@@ -32,6 +32,9 @@ into their data folder. It is never committed.
 - `backend/remote.py` is the shared server for invited friends: the same
   tools over HTTP with a sign-in, on its own database. It is run by hand and
   is local-only until the going-online phase. See "Shared server" below.
+- `backend/extension.py` is the same local server packaged as a Claude
+  Desktop extension for people who install nothing else. See "Claude Desktop
+  extension" below.
 - Python is the project's own `.venv` (3.11): `.venv/Scripts/python.exe` on
   Windows, `.venv/bin/python` on a Mac. Never the system Python.
 - After any code change run `check.py` with that Python; it must end with
@@ -46,8 +49,9 @@ into their data folder. It is never committed.
   behaviour in `jyotisha.py`, and keep both sets of wrappers in step.
 - Prefer pointing the person at a double-click file over giving them a
   command.
-- `jyotisha.py`, `backend/paths.py`, `tools/repair_paths.py` and
-  `tools/check_clean.py` use the standard library only: they must run before
+- `jyotisha.py`, `backend/paths.py`, `backend/backup.py`,
+  `tools/repair_paths.py` and `tools/check_clean.py` use the standard library
+  only: they must run before
   `.venv` exists.
 - `requirements.txt` pins every installed package to its exact version,
   dependencies included. A package only one OS needs carries a marker
@@ -116,6 +120,35 @@ into their data folder. It is never committed.
   record it as exact and do not reopen the question.
 - Only answers recorded with `record_decision` reach the journal. Questions
   asked in other apps or plain chat are not journaled.
+
+- `correct_profile` and `remove_profile` take that archive copy themselves
+  (`Store.safety_copy`) before they change a personal database. Removal is
+  two calls: a preview, then the profile's name as confirmation.
+
+## Claude Desktop extension
+
+- The people installing it are not technical. Anything they must do goes on
+  the download page (`docs/index.html`) in plain words; the server's
+  instructions tell Claude never to ask them for a command or a file edit.
+- A tool registered with `@tool` is offered everywhere, the shared server
+  included. `@local_tool` is for tools that need the person's own database
+  file (`back_up_data`); the shared server does not offer those.
+- `extension/manifest.json` lists every tool by name. Add or rename a tool
+  and `verify_extension.py` fails until the manifest matches.
+- The version in `extension/manifest.json` is the release switch: pushing a
+  version with no release makes `.github/workflows/release.yml` build and
+  publish all three files. Raise it only when a release is meant, and ask
+  first.
+- The frozen program reads `backend/schema.sql` and the skill files from
+  beside the code. A new data file the code reads at run time has to be added
+  to `freeze()` in `tools/build_extension.py`, or it works in `.venv` and
+  fails in the extension.
+- The Mac files cannot be tried on Windows. They are tried by the release
+  workflow on real Macs, by opening the packed file and running a first
+  session; a real install in Claude Desktop on a Mac has not been done from
+  here.
+- `Build extension` installs PyInstaller into `.venv`
+  (`requirements-build.txt`). It is not needed to run the advisor.
 
 ## Shared server (friends)
 

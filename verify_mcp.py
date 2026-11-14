@@ -55,7 +55,8 @@ expected = sorted(["list_people", "chart_context", "dasha_at", "transits_at",
                    "yogas_in_chart", "aspects_on_house",
                    "propose_rectification", "apply_rectification",
                    "chart_image", "saturn_from_moon", "personal_day",
-                   "graha_shadbala", "transit_contacts", "test_birth_time"])
+                   "graha_shadbala", "transit_contacts", "test_birth_time",
+                   "correct_profile", "remove_profile", "back_up_data"])
 check("every tool is registered", names == expected, ", ".join(names))
 check("each tool carries a description",
       all(t.description for t in schemas))
@@ -182,6 +183,120 @@ gap = srv.create_profile(
 check("the clocks-forward gap is reported back, not resolved silently",
       any("never occurred" in w for w in gap["warnings"]),
       gap["warnings"][0] if gap["warnings"] else "no warning given")
+
+print()
+print("=" * 72)
+print("11. A mistake in a profile is corrected without losing anything")
+third = made["person_id"]
+srv.record_decision(question="Made under the uncorrected chart?",
+                    verdict="Yes.", person_id=third)
+before = store.active_chart_row(third)
+fixed = srv.correct_profile(note="Year was mistyped; certificate says 1976.",
+                            birth_date="1976-06-20", name="Third Corrected",
+                            person_id=third)
+after = store.active_chart_row(third)
+versions = store.chart_versions(third)
+check("the corrected date is the active chart",
+      after["birth_date"] == "1976-06-20" and fixed.get("chart_id") == after["id"],
+      fixed.get("birth", str(fixed)[:90]))
+check("the earlier version is kept, and the new one points back at it",
+      len(versions) == 2 and after["derived_from_id"] == before["id"]
+      and fixed["previous_version_kept"] == before["id"])
+check("what was not mentioned is carried over unchanged",
+      after["birth_time"] == before["birth_time"]
+      and after["place_name"] == before["place_name"]
+      and after["time_confidence"] == before["time_confidence"])
+check("the reason is stored with the new version",
+      "certificate" in (after["rectification_note"] or ""))
+check("the name is corrected and the profile answers to it",
+      srv._resolve("Third Corrected") == third)
+check("the journal entry survives, still tied to the chart it was made under",
+      [d["chart_id"] for d in store.decisions(third)] == [before["id"]])
+copy = Path(fixed.get("safety_copy", "missing"))
+check("a safety copy was taken first, in archive/ beside the database",
+      copy.exists() and copy.parent == store.path.parent / "archive"
+      and "correct-profile" in copy.name, copy.name)
+check("a changed place without coordinates is refused, not guessed",
+      "error" in srv.correct_profile(note="moved", place_name="Elsewhere",
+                                     person_id=third)
+      and len(store.chart_versions(third)) == 2)
+check("a correction with no note or nothing to change is refused",
+      "error" in srv.correct_profile(note=" ", name="X", person_id=third)
+      and "error" in srv.correct_profile(note="why", person_id=third)
+      and srv._resolve("Third Corrected") == third)
+check("an unreadable date is refused and the name left alone",
+      "error" in srv.correct_profile(note="why", birth_date="20/06/1976",
+                                     name="Renamed", person_id=third)
+      and srv._resolve("Third Corrected") == third)
+
+print()
+print("=" * 72)
+print("12. Removing a profile takes two steps and leaves a way back")
+gap_id = gap["person_id"]
+srv.add_life_event(happened_on="2030-01-01", title="Something", person_id=gap_id)
+preview = srv.remove_profile(person_id="Gap")
+check("the first call deletes nothing and says what would go",
+      preview["deleted"] is False and preview["would_delete"]["life_events"] == 1
+      and preview["would_delete"]["chart_versions"] == 1
+      and any(p["id"] == gap_id for p in store.people()), str(preview["would_delete"]))
+wrong = srv.remove_profile(person_id="Gap", confirm_name="Reference")
+check("a confirmation naming a different profile deletes nothing",
+      wrong["deleted"] is False and any(p["id"] == gap_id for p in store.people()))
+people_before = len(store.people())
+gone = srv.remove_profile(person_id="Gap", confirm_name="gap")
+check("with the name confirmed, the profile and all under it are gone",
+      gone["deleted"] is True and len(store.people()) == people_before - 1
+      and store.db.execute("SELECT COUNT(*) FROM chart WHERE person_id=?",
+                           (gap_id,)).fetchone()[0] == 0
+      and store.db.execute("SELECT COUNT(*) FROM life_event WHERE person_id=?",
+                           (gap_id,)).fetchone()[0] == 0)
+check("the other profiles and their journals are untouched",
+      len(srv.past_decisions(person_id=pid)) == 1
+      and len(store.decisions(third)) == 1)
+import sqlite3
+copy = Path(gone.get("safety_copy", "missing"))
+kept = sqlite3.connect(copy).execute(
+    "SELECT COUNT(*) FROM person WHERE name='Gap'").fetchone()[0] if copy.exists() else 0
+check("the copy taken just before still holds the removed profile",
+      kept == 1 and "remove-profile" in copy.name, copy.name)
+try:
+    srv.remove_profile(person_id="Gap")
+    check("a removed profile is simply not there afterwards", False)
+except Exception as e:
+    check("a removed profile is simply not there afterwards",
+          "No profile named" in str(e))
+check("a profile with a journal can be removed too",
+      srv.remove_profile(person_id=third, confirm_name="Third Corrected")["deleted"]
+      and store.db.execute("SELECT COUNT(*) FROM decision WHERE person_id=?",
+                           (third,)).fetchone()[0] == 0)
+
+print()
+print("=" * 72)
+print("13. A backup on request")
+dest = Path(tempfile.mkdtemp()) / "backups"
+done = srv.back_up_data(folder=str(dest))
+saved_file = Path(done["file"])
+check("the backup is a dated file in the folder asked for",
+      saved_file.exists() and saved_file.parent == dest
+      and saved_file.name.startswith("jyotisha-"), saved_file.name)
+names_in_copy = {r[0] for r in sqlite3.connect(saved_file).execute(
+    "SELECT name FROM person")}
+check("it holds the same profiles as the live database",
+      names_in_copy == {p["name"] for p in store.people()},
+      ", ".join(sorted(names_in_copy)))
+check("and the run is written to the backup log",
+      "OK" in (dest / "backup-log.txt").read_text(encoding="utf-8"))
+blocker = Path(tempfile.mkdtemp()) / "a-file"
+blocker.write_text("x")
+try:
+    srv.back_up_data(folder=str(blocker / "sub"))
+    check("a folder that cannot be used is reported, not swallowed", False)
+except Exception as e:
+    check("a folder that cannot be used is reported, not swallowed",
+          "backup folder" in str(e), str(e).splitlines()[0])
+check("the backup tool is kept off the shared server",
+      srv.back_up_data in srv.LOCAL_TOOLS and srv.back_up_data not in srv.TOOLS
+      and srv.remove_profile in srv.TOOLS and srv.correct_profile in srv.TOOLS)
 
 print()
 print("=" * 72)

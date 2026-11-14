@@ -12,8 +12,7 @@ from nothing every session.
 """
 from __future__ import annotations
 
-import json
-from typing import Any
+import sqlite3
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -74,6 +73,14 @@ If a birth time is loose and there are life events on record,
 propose_rectification can narrow it. Put the result to the person; never adopt
 a candidate yourself, and never call apply_rectification without their explicit
 agreement.
+
+If a profile holds a mistake -- a misspelt name, the wrong birth date, time or
+place -- call correct_profile. Birth data is never overwritten: the correction
+becomes a new chart version and the old one is kept. To delete a profile, call
+remove_profile once to see what would go, tell the person exactly that, and
+call it again with confirm_name only after they have said yes in so many
+words. If a back_up_data tool is offered, use it when they ask for a backup,
+and suggest it after a session that added a lot.
 """
 
 mcp = MCPServer(
@@ -89,6 +96,16 @@ TOOLS: list = []
 
 def tool(fn):
     TOOLS.append(fn)
+    return mcp.tool()(fn)
+
+
+# Tools that only make sense where the database is the person's own file on
+# their own computer. The shared server does not offer these.
+LOCAL_TOOLS: list = []
+
+
+def local_tool(fn):
+    LOCAL_TOOLS.append(fn)
     return mcp.tool()(fn)
 
 
@@ -110,7 +127,15 @@ def _get_store() -> Store:
     if _session_store is not None:
         return _session_store()
     if _store is None:
-        _store = Store()
+        try:
+            _store = Store()
+        except (OSError, sqlite3.Error) as exc:
+            from .store import DB_PATH
+            raise ToolError(
+                f"The database could not be opened at {DB_PATH} ({exc}). "
+                f"Tell the person: check that this folder exists and can be "
+                f"written to, or choose another data folder in the "
+                f"extension's settings, then restart Claude.") from None
     return _store
 
 
@@ -823,8 +848,27 @@ def create_profile(name: str, birth_date: str, birth_time: str,
                     latitude, longitude, conf, ayanamsa)
     _runners.pop((store.account_id, pid), None)
     row = store.active_chart_row(pid)
-    chart = store.compute(row)
 
+    return {"person_id": pid,
+            "lagna": _lagna(store, row),
+            "timezone": row["timezone_name"],
+            "utc_offset_hours": row["utc_offset_hours"],
+            "warnings": _time_warnings(row),
+            "next": "Ask for five to ten dated life events and record each with "
+                    "add_life_event. They give you a history to reason from, and "
+                    "they are what any later birth-time rectification is tested "
+                    "against."}
+
+
+def _lagna(store: Store, row: dict) -> str:
+    from . import ephemeris
+    chart = store.compute(row)
+    return (f"{ephemeris.dms(chart.ascendant.degrees_in_sign)} "
+            f"{chart.ascendant.sign} ({chart.ascendant.sign_english})")
+
+
+def _time_warnings(row: dict) -> list[str]:
+    """What a human has to settle about a stored local birth time."""
     warnings = []
     if row["time_nonexistent"]:
         warnings.append("That local time never occurred -- the clocks went "
@@ -838,17 +882,190 @@ def create_profile(name: str, birth_date: str, birth_time: str,
             f"birthplace's own mean time was used "
             f"({row['utc_offset_hours']:+.4f}h rather than "
             f"{row['iana_offset_hours']:+.4f}h).")
+    return warnings
 
-    return {"person_id": pid,
-            "lagna": f"{ephemeris.dms(chart.ascendant.degrees_in_sign)} "
-                     f"{chart.ascendant.sign} ({chart.ascendant.sign_english})",
-            "timezone": row["timezone_name"],
-            "utc_offset_hours": row["utc_offset_hours"],
-            "warnings": warnings,
-            "next": "Ask for five to ten dated life events and record each with "
-                    "add_life_event. They give you a history to reason from, and "
-                    "they are what any later birth-time rectification is tested "
-                    "against."}
+
+# ------------------------------------------------------ fixing and removing
+
+
+@tool
+def correct_profile(note: str, name: str | None = None,
+                    relation: str | None = None,
+                    birth_date: str | None = None,
+                    birth_time: str | None = None,
+                    place_name: str | None = None,
+                    latitude: float | None = None,
+                    longitude: float | None = None,
+                    time_confidence: str | None = None,
+                    person_id: int | str | None = None) -> dict:
+    """Fix a mistake in a profile: the name, the relation, or the birth data.
+
+    Pass only what is changing. `note` says what was wrong and how the right
+    value is known ("typo in the year; checked against the birth
+    certificate"), because a later reader will need it.
+
+    Nothing about a birth is overwritten. A changed date, time, place or
+    time_confidence is stored as a NEW chart version that becomes the active
+    one; the earlier version is kept, and journal entries made under it still
+    point at it. A changed place needs its coordinates too -- get them from
+    search_places or parse_coordinates, never from memory.
+
+    birth_date is YYYY-MM-DD and birth_time HH:MM or HH:MM:SS, as the local
+    clock read at the birthplace. Read the warnings in the response, as after
+    create_profile. This is for correcting a record that was entered wrong;
+    narrowing an uncertain time against life events is apply_rectification.
+    """
+    from .confidence import TimeConfidence
+    pid = _resolve(person_id)
+    store = _get_store()
+    row = store.active_chart_row(pid)
+
+    if not note.strip():
+        return {"error": "note is required: say what was wrong and how the "
+                         "right value is known"}
+    if (latitude is None) != (longitude is None):
+        return {"error": "give latitude and longitude together"}
+    if place_name is not None and latitude is None \
+            and place_name.strip() != row["place_name"]:
+        return {"error": "a changed place needs its coordinates: look it up "
+                         "with search_places or parse_coordinates"}
+    birth_changes = (birth_date, birth_time, place_name, latitude,
+                     time_confidence)
+    if name is None and relation is None and not any(
+            v is not None for v in birth_changes):
+        return {"error": "nothing to change was given"}
+    if name is not None and not name.strip():
+        return {"error": "name must not be empty"}
+
+    try:
+        conf = TimeConfidence[(time_confidence or row["time_confidence"]).upper()]
+    except KeyError:
+        return {"error": f"time_confidence must be one of "
+                         f"{[c.name for c in TimeConfidence]}"}
+    try:
+        y, mo, d = (int(x) for x in (birth_date or row["birth_date"]).split("-"))
+        parts = [int(x) for x in (birth_time or row["birth_time"]).split(":")]
+        hh, mm = parts[0], parts[1]
+        ss = parts[2] if len(parts) > 2 else 0
+    except (ValueError, IndexError):
+        return {"error": "birth_date must be YYYY-MM-DD and birth_time HH:MM"}
+
+    copy = store.safety_copy("correct-profile")
+    changed = [k for k, v in (("name", name), ("relation", relation))
+               if v is not None]
+    out: dict = {"person_id": pid}
+    if any(v is not None for v in birth_changes):
+        try:
+            chart_id = store.add_chart(
+                pid, y, mo, d, hh, mm, ss, place_name or row["place_name"],
+                row["latitude"] if latitude is None else latitude,
+                row["longitude"] if longitude is None else longitude,
+                conf, row["ayanamsa"], derived_from_id=row["id"],
+                rectification_note=f"Correction: {note.strip()}")
+        except ValueError as exc:
+            return {"error": f"that birth data could not be used: {exc}"}
+        _runners.pop((store.account_id, pid), None)
+        new_row = store.active_chart_row(pid)
+        rel = store.reliability(new_row)
+        changed += [k for k, v in (
+            ("birth_date", birth_date), ("birth_time", birth_time),
+            ("place", place_name if place_name is not None else latitude),
+            ("time_confidence", time_confidence)) if v is not None]
+        out.update({
+            "chart_id": chart_id,
+            "previous_version_kept": row["id"],
+            "birth": f"{new_row['birth_date']} {new_row['birth_time']} local, "
+                     f"{new_row['place_name']}",
+            "lagna": _lagna(store, new_row),
+            "lagna_before": _lagna(store, row),
+            "timezone": new_row["timezone_name"],
+            "time_confidence": new_row["time_confidence"],
+            "dates_may_be_stated": rel.date_precision,
+            "warnings": _time_warnings(new_row),
+            "note": "Stored as a new chart version; the earlier one is kept. "
+                    "If the lagna changed, say so plainly: earlier answers "
+                    "were read from a different chart and may not hold."})
+    # Last, so a birth correction that is refused leaves the name alone too.
+    if name is not None or relation is not None:
+        store.update_person(pid, name=name, relation=relation)
+    out["changed"] = changed
+    if copy is not None:
+        out["safety_copy"] = str(copy)
+    return out
+
+
+@tool
+def remove_profile(person_id: int | str, confirm_name: str = "") -> dict:
+    """Delete a profile and everything stored under it. Two steps, always.
+
+    First call it WITHOUT confirm_name. Nothing is deleted: it returns the
+    profile's name and what would go with it -- every chart version, every
+    life event, every journal entry. Tell the person exactly that and ask
+    whether they are sure.
+
+    Only after they have clearly said yes, call it again with confirm_name
+    set to the profile's name as returned. Never fill confirm_name in on your
+    own initiative, and never to tidy up: a mistake in a profile is fixed
+    with correct_profile, not by deleting and starting again, because
+    deleting takes the journal with it.
+
+    Name the profile explicitly; this tool never assumes whose it is.
+    """
+    pid = _resolve(person_id)
+    store = _get_store()
+    name = store.person(pid)["name"]
+    holds = store.holdings(pid)
+    if not confirm_name.strip():
+        return {"deleted": False, "name": name, "would_delete": holds,
+                "next": "Nothing was deleted. Tell the person what would be "
+                        "removed and ask if they are sure. If they say yes, "
+                        "call remove_profile again with confirm_name set to "
+                        f"{name!r}."}
+    if confirm_name.strip().lower() != name.strip().lower():
+        return {"deleted": False,
+                "error": "confirm_name does not match this profile's name. "
+                         "Nothing was deleted."}
+    copy = store.safety_copy("remove-profile")
+    store.delete_person(pid)
+    _runners.pop((store.account_id, pid), None)
+    out = {"deleted": True, "name": name, "removed": holds}
+    if copy is not None:
+        out["safety_copy"] = str(copy)
+        out["note"] = ("A copy of the whole database from just before the "
+                       "removal was kept at the path above, in case this was "
+                       "a mistake.")
+    else:
+        out["note"] = "This is permanent. No copy was kept."
+    return out
+
+
+@local_tool
+def back_up_data(folder: str | None = None) -> dict:
+    """Make a backup copy of the person's data: every profile, chart, life
+    event and journal entry, in one dated file.
+
+    Call it when they ask for a backup, and offer it after a session that
+    added a lot. With no `folder` the copy goes to their usual backup folder.
+    Pass `folder` only when they name somewhere themselves -- a USB stick, a
+    second drive, a cloud-synced folder -- as a full path.
+
+    The copy is whole even while the database is in use. A second backup on
+    the same day replaces that day's file; earlier days are kept. Tell them
+    where the file went, and that a copy on the same disk as the original
+    guards against mistakes but not against the computer failing.
+    """
+    from . import backup
+    store = _get_store()
+    if store.shared:
+        raise ToolError("Backups of the shared server are made by whoever "
+                        "runs it, not from here.")
+    result = backup.run(src=store.path, dest=folder or None)
+    if not result["ok"]:
+        raise ToolError(result["message"])
+    return {"backed_up": True, "file": result["file"],
+            "profiles": len(store.people()),
+            "to_restore": "Close Claude, then copy this file over "
+                          f"{store.path} (keeping that name)."}
 
 
 def main() -> None:

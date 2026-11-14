@@ -1,0 +1,4 @@
+# Only for building the Claude Desktop extension (tools/build_extension.py).
+# Not needed to run the advisor. "python jyotisha.py extension" installs these
+# into .venv the first time it is used.
+pyinstaller==6.22.3

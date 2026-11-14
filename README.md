@@ -45,7 +45,13 @@ can see over time whether the advice is any good.
 
 ## Install
 
-You need:
+**The simple way, no command line:** if you use the Claude Desktop app, get
+the extension from **https://nidzus.github.io/zeljko/** — download one file,
+open it, and say "Set me up with Zeljko". Nothing else needs installing. See
+"The Claude Desktop extension" below.
+
+**The full app** (Claude Code plugin, web app, shared server) is what the
+rest of this section installs. You need:
 
 - [Claude Code](https://claude.com/claude-code), signed in;
 - Python **3.11** (not newer: every package is pinned and tested on it);
@@ -102,6 +108,7 @@ folder on Windows, `.command` in `Mac/` on a Mac.
 | Manage accounts | invite, list, disable, reset or delete a friend's account |
 | Start shared server | runs the server friends connect to, on this computer only |
 | Try as a test friend | opens Claude Code as a friend would see it |
+| Build extension | builds the Claude Desktop extension for this computer, to try a change |
 
 Inside Claude Code:
 
@@ -130,6 +137,7 @@ python jyotisha.py journal             the web app, opened in a browser
 python jyotisha.py accounts [...]      invite and manage friends' accounts
 python jyotisha.py serve               the shared server for friends
 python jyotisha.py hooks               turn on the privacy check before commits
+python jyotisha.py extension           build the Claude Desktop extension (.mcpb)
 ```
 
 Use the project's Python for everything except `install`:
@@ -171,6 +179,50 @@ on the same drive covers mistakes, not the drive failing — for that, point
 `Repair paths` (after `init <new folder>` if it was the data folder). A
 virtual environment is not relocatable, so after moving the app folder also
 run `Install or repair`.
+
+**Fixing and removing a profile.** Ask Claude. A wrong name, date, time or
+place is corrected with `correct_profile`: birth data is never overwritten,
+the correction becomes a new chart version and the old one stays. A profile
+is deleted with `remove_profile`, which first reports what would go and only
+deletes once you have confirmed by name. Before either, a copy of the
+database is put in `archive/` in the data folder. "Back up my data" in a chat
+does the same as `Back up data`.
+
+## The Claude Desktop extension
+
+For someone who does not use a command line: one file, opened with Claude
+Desktop, on Windows or a Mac. It carries its own Python and every package, so
+nothing else is installed. The download page is
+**https://nidzus.github.io/zeljko/** (`docs/index.html`, served by GitHub
+Pages).
+
+- **Same tools, same database format.** The extension runs
+  `backend/extension.py`: every tool of the local server, plus the `guidance`
+  tool and the three prompts, so onboarding, asking and the journal work
+  without the plugin.
+- **First run.** It creates the data folder (asked for at install, default
+  `~/jyotisha-data`) and the database appears with the first profile. If you
+  already use the full app, the extension finds the same folder and the same
+  data. Use one or the other in Claude Desktop, not both: with the extension
+  installed, remove the `jyotisha` entry that `Add to Claude Desktop` wrote,
+  or every tool appears twice.
+- **Backups.** "Back up my data" writes a dated copy to the backup folder
+  from the extension's settings, unless `settings.json` in the data folder
+  names one.
+- **Not signed.** The program inside is not signed by a company, so Claude
+  Desktop may warn about an unverified developer.
+
+**Releasing a new version.** Raise `"version"` in `extension/manifest.json`,
+commit and push. `.github/workflows/release.yml` sees a version with no
+release, builds the extension on Windows, an Apple-silicon Mac and an Intel
+Mac, runs every suite, opens each packed file and puts it through a first run
+with a made-up person, and publishes the three files as release `v<version>`.
+The download page always links to the latest release, so it needs no change.
+A push that leaves the version alone releases nothing.
+
+**Trying a change first.** `Build extension` builds the file for the computer
+you are on into `dist/` and runs the same first-run trial. Double-click the
+result to install it over the published one.
 
 ## Sharing with friends
 
@@ -299,6 +351,11 @@ added without being covered.
 | `backend/accounts.py` | invitations, sign-in and account management |
 | `backend/remote.py` | the shared server: the tools over HTTP, behind a sign-in |
 | `backend/guidance.py` | serves the plugin's three skills to people without it |
+| `backend/backup.py` | dated backups, and safety copies before a correction |
+| `backend/extension.py` | the server the Claude Desktop extension runs |
+| `extension/` | the extension's manifest, icon and start-up file |
+| `tools/build_extension.py` | freezes, packs and tries the extension |
+| `docs/` | the download page, served by GitHub Pages |
 | `backend/tools.py` | the only tools the advisor may use |
 | `backend/advisor.py` | the interpretive layer -- the one place a model runs |
 | `jyotisha.py` | install, check, backup and the rest, on Windows and Mac |

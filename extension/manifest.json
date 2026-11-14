@@ -1,0 +1,87 @@
+{
+  "manifest_version": "0.3",
+  "name": "zeljko",
+  "display_name": "Zeljko, the jyotisha advisor",
+  "version": "1.0.0",
+  "description": "Ask about a decision and get an answer from your computed Vedic chart, with a journal of what was advised and how it turned out.",
+  "long_description": "Zeljko is a jyotisha (Vedic astrology) advisor that runs inside your own Claude. Tell it when and where you were born, then ask about a decision: take the job, move, commit, wait. The answer comes verdict first in plain words, then the timing, then the reasoning.\n\nEvery astronomical fact is computed on your computer by the Swiss Ephemeris; Claude interprets, it never calculates. The advisor is honest about your birth time: if it is only roughly known, claims that depend on the exact minute are refused rather than guessed.\n\nIt keeps a journal of what was advised, what you chose and how it turned out, so you can see over time whether the advice is any good.\n\nYour data stays on your computer, in a folder you choose. To begin, start a new chat and say: \"Set me up with Zeljko.\"\n\nThis is a tool for thinking a decision through. It is not professional advice of any kind, and it can be wrong.",
+  "author": {
+    "name": "nidzus",
+    "url": "https://github.com/nidzus"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nidzus/zeljko"
+  },
+  "homepage": "https://nidzus.github.io/zeljko/",
+  "documentation": "https://github.com/nidzus/zeljko#readme",
+  "support": "https://github.com/nidzus/zeljko/issues",
+  "icon": "icon.png",
+  "license": "AGPL-3.0-or-later",
+  "keywords": ["jyotisha", "vedic astrology", "decisions", "journal"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/zeljko",
+    "mcp_config": {
+      "command": "${__dirname}/server/zeljko",
+      "args": [],
+      "env": {
+        "JYOTISHA_HOME": "${user_config.data_folder}",
+        "JYOTISHA_BACKUPS": "${user_config.backup_folder}"
+      }
+    }
+  },
+  "user_config": {
+    "data_folder": {
+      "type": "directory",
+      "title": "Where to keep your data",
+      "description": "Your profiles, charts and decision journal are stored in this folder, on this computer only. It is created the first time the advisor runs. The suggested place is fine for almost everyone.",
+      "default": "${HOME}/jyotisha-data",
+      "required": true
+    },
+    "backup_folder": {
+      "type": "directory",
+      "title": "Where backups go",
+      "description": "When you ask Claude to back up your data, the copy is put here. For protection against the computer failing, choose a USB stick, a second drive or a cloud-synced folder.",
+      "default": "${HOME}/jyotisha-backups",
+      "required": true
+    }
+  },
+  "prompts_generated": true,
+  "tools": [
+    {"name": "guidance", "description": "How to set up a profile, advise on a decision, or review the journal"},
+    {"name": "list_people", "description": "Every profile you have"},
+    {"name": "create_profile", "description": "Create a profile and compute its chart"},
+    {"name": "correct_profile", "description": "Fix a mistake in a profile; birth data becomes a new chart version"},
+    {"name": "remove_profile", "description": "Delete a profile, in two steps, after a safety copy"},
+    {"name": "back_up_data", "description": "Make a dated backup copy of all your data"},
+    {"name": "search_places", "description": "Find a birthplace by city name, offline"},
+    {"name": "parse_coordinates", "description": "Read pasted map coordinates"},
+    {"name": "chart_context", "description": "The birth chart, life events, and what the birth time supports"},
+    {"name": "chart_image", "description": "A drawing of the chart"},
+    {"name": "dasha_at", "description": "The planetary periods running at a date"},
+    {"name": "transits_at", "description": "Where the planets are at a date, in this chart's houses"},
+    {"name": "events_between", "description": "Sign changes, stations and period changes between two dates"},
+    {"name": "transit_contacts", "description": "Exact dates a transiting planet reaches a natal point"},
+    {"name": "transit_support", "description": "Whether a transit is well supported for this chart"},
+    {"name": "saturn_from_moon", "description": "Sade Sati and related Saturn periods"},
+    {"name": "panchanga_for", "description": "The five limbs of a day"},
+    {"name": "personal_day", "description": "Whether a day suits this person"},
+    {"name": "divisional_chart", "description": "A divisional chart, if the birth time supports it"},
+    {"name": "graha_strength", "description": "How strong each planet is, and why"},
+    {"name": "graha_shadbala", "description": "Numeric strength, for ranking planets"},
+    {"name": "yogas_in_chart", "description": "The classical combinations in the chart"},
+    {"name": "aspects_on_house", "description": "What occupies and aspects a house"},
+    {"name": "add_life_event", "description": "Record something dated that happened"},
+    {"name": "past_decisions", "description": "The decision journal"},
+    {"name": "record_decision", "description": "Save a judgement to the journal"},
+    {"name": "record_choice", "description": "Record what was actually decided"},
+    {"name": "record_outcome", "description": "Record how a decision turned out"},
+    {"name": "propose_rectification", "description": "Narrow an uncertain birth time against life events"},
+    {"name": "test_birth_time", "description": "Test candidate birth times against life events"},
+    {"name": "apply_rectification", "description": "Store an accepted birth time as a new chart version"}
+  ],
+  "compatibility": {
+    "platforms": ["win32", "darwin"]
+  }
+}
