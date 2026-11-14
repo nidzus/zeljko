@@ -99,6 +99,25 @@ def stage(frozen: Path, platform_key: str) -> Path:
     return staged
 
 
+def borrowed_libraries(staged: Path) -> list[str]:
+    """On a Mac: anything in the bundle that still points at a library
+    installed on the build machine (Homebrew), which the person installing
+    the extension will not have. It would pass every trial here and fail
+    there, so it is looked for directly."""
+    if sys.platform != "darwin":
+        return []
+    found = []
+    for f in (staged / "server").rglob("*"):
+        if f.is_symlink() or not f.is_file() or f.suffix not in ("", ".so", ".dylib"):
+            continue
+        out = subprocess.run(["otool", "-L", str(f)], capture_output=True, text=True).stdout
+        for line in out.splitlines()[1:]:
+            dep = line.strip().split(" (")[0]
+            if dep.startswith(("/usr/local/", "/opt/homebrew/", "/Users/")):
+                found.append(f"{f.relative_to(staged)} -> {dep}")
+    return found
+
+
 class Session:
     """The frozen program, spoken to as Claude Desktop speaks to it."""
 
@@ -250,6 +269,10 @@ def main() -> int:
     if "--reuse" not in sys.argv or not frozen.exists():   # --reuse: skip the slow step
         frozen = freeze()
     staged = stage(frozen, platform_key)
+    borrowed = borrowed_libraries(staged)
+    if borrowed:
+        raise SystemExit("FAILED: the program depends on libraries that exist "
+                         "only on this machine:\n  " + "\n  ".join(borrowed[:20]))
     out = pack(staged, label)
     print("\nOpening the packed file and trying it as Claude Desktop would\n")
     try:

@@ -61,6 +61,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      # On an Intel Mac the cryptography package has no ready-made build and
+      # is compiled here. Left alone it borrows this machine's OpenSSL, which
+      # the person installing the extension does not have; this puts OpenSSL
+      # inside it instead. No effect where a ready-made build is used.
+      - name: Keep OpenSSL inside packages compiled here
+        if: runner.os == 'macOS'
+        run: |
+          echo "OPENSSL_STATIC=1" >> "$GITHUB_ENV"
+          echo "OPENSSL_DIR=$(brew --prefix openssl@3)" >> "$GITHUB_ENV"
       - name: Install and run every suite
         run: python jyotisha.py install
       - name: Build the extension and try the built program

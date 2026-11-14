@@ -147,6 +147,10 @@ into their data folder. It is never committed.
   workflow on real Macs, by opening the packed file and running a first
   session; a real install in Claude Desktop on a Mac has not been done from
   here.
+- Intel Macs have no ready-made build of `cryptography`, so the release
+  workflow compiles it with OpenSSL inside (`OPENSSL_STATIC`). Without that
+  the frozen program fails to start. The build also refuses a Mac bundle
+  that points at a library from the build machine.
 - `Build extension` installs PyInstaller into `.venv`
   (`requirements-build.txt`). It is not needed to run the advisor.
 
