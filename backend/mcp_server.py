@@ -57,11 +57,14 @@ Never call a day good or bad from panchanga_for alone. The panchanga is the
 same for everyone standing in the same place; personal_day is counted from
 this person's natal Moon and routinely disagrees with it. Check both.
 
-Both are worked out for where the person is NOW, not where they were born.
-chart_context says whether that place is on record ("NOW IN"). If it is not,
-ask where they live before the first day-scale answer and save it with
+Both are worked out for where the person is on the date asked about, not
+where they were born. chart_context says what is on record: "NOW IN" is where
+they live, "AWAY" is a dated stay elsewhere. If neither is recorded, ask where
+they live before the first day-scale answer and save it with
 set_current_place; a reply that carries place_warning was computed for the
-birthplace and is wrong for anyone living elsewhere.
+birthplace and is wrong for anyone living elsewhere. When they mention a trip,
+ask the dates and record it as a stay with `until`, never by overwriting where
+they live: a stay ends by itself. Say which place an answer was computed for.
 
 NUMBERS YOU DID NOT COMPUTE
 
@@ -408,10 +411,11 @@ def add_life_event(happened_on: str, title: str, category: str | None = None,
 # ------------------------------------------------------ day scale and weight
 
 
-def _where(pid: int, place: str | None = None) -> dict:
+def _where(pid: int, place: str | None = None,
+           on: str | None = None) -> dict:
     """The place a day-scale answer is worked out for, and how it was chosen:
-    the one named in the call, else the one saved for the person, else the
-    birthplace."""
+    the one named in the call, else a stay covering that date, else where the
+    person lives, else the birthplace."""
     from . import timeplace
     store = _get_store()
     if place and place.strip():
@@ -419,16 +423,31 @@ def _where(pid: int, place: str | None = None) -> dict:
             return {**timeplace.locate(place), "chosen": "named in this call"}
         except ValueError as exc:
             return {"error": str(exc)}
-    saved = store.current_place(pid)
+    saved = store.current_place(pid, on=on)
+    if saved and "until" in saved:
+        return {**saved, "other_matches": [],
+                "chosen": f"a stay on record, {saved['from']} until "
+                          f"{saved['until']}"}
     if saved:
         return {**saved, "other_matches": [],
-                "chosen": "saved as where this person is now"}
+                "chosen": "saved as where this person lives"}
     row = store.active_chart_row(pid)
     return {"name": row["place_name"], "latitude": row["latitude"],
             "longitude": row["longitude"],
             "timezone": timeplace.timezone_for(row["latitude"],
                                                row["longitude"]),
             "other_matches": [], "chosen": "birthplace"}
+
+
+def _today(pid: int, place: str | None) -> str:
+    """Today's date where the person is, not where this program runs."""
+    from datetime import datetime, timezone
+    from . import timeplace
+    now = datetime.now(timezone.utc)
+    where = _where(pid, place, on=now.date().isoformat())
+    if "error" in where:
+        return now.date().isoformat()
+    return timeplace.local(now, where["timezone"]).date().isoformat()
 
 
 def _where_note(where: dict) -> dict:
@@ -450,41 +469,82 @@ def _where_note(where: dict) -> dict:
 
 
 @tool
-def set_current_place(place: str, person_id: int | str | None = None) -> dict:
-    """Record where a person is now, when it is not where they were born.
+def set_current_place(place: str, person_id: int | str | None = None,
+                      until: str | None = None,
+                      starting: str | None = None) -> dict:
+    """Record where a person is, when it is not where they were born.
 
     Day-scale answers depend on it: sunrise, the limbs of the day, Rahu Kaal
     and the hour a favourable stretch begins are different in another city,
-    and are given in that city's clock time. Ask once ("where are you living
-    now?") and save it here; panchanga_for and personal_day then use it
-    without being told. Call it again when the person moves or is travelling
-    for a while.
+    and are given in that city's clock time. panchanga_for and personal_day
+    then use it without being told.
+
+    Two kinds, and which one you record matters:
+
+    - Where they LIVE: call with the place only. Ask once ("where are you
+      living now?"). It stays until changed.
+    - A STAY somewhere else -- a trip, a month abroad: also pass `until`, the
+      last day there (YYYY-MM-DD), and `starting`, the first day, if it has
+      not begun yet (it defaults to today). The home place is left alone. The
+      stay is used for dates inside it and lapses by itself afterwards, so
+      always prefer this for travel, and ask for the return date rather than
+      overwrite where they live. A question about a date after the stay is
+      answered for home.
 
     `place` is a city ("Lisbon"), a city and country ("Springfield, US"), or
-    coordinates pasted from a map. Pass an empty string to clear it and go
-    back to the birthplace. Read the reply: if `other_places_with_that_name`
-    is not empty, confirm with the person which one they meant.
+    coordinates pasted from a map. An empty string ends a stay if one is on
+    record ("I came back early"); with no stay on record it clears where they
+    live and day-scale answers go back to the birthplace. Read the reply: if
+    `other_places_with_that_name` is not empty, confirm with the person which
+    one they meant.
 
-    This changes nothing about the birth chart.
+    This changes nothing about the birth chart. For a single question about
+    one day somewhere else, do not record anything: pass `place` to
+    panchanga_for or personal_day.
     """
+    from datetime import date as date_cls
     from . import timeplace
     pid = _resolve(person_id)
     store = _get_store()
     name = store.person(pid)["name"]
     if not place.strip():
+        if store.stay(pid):
+            store.set_stay(pid, None)
+            home = store.current_place(pid)
+            return {"person": name, "stay": None,
+                    "note": "The stay is ended. Day-scale answers use "
+                            + (home["name"] if home else "the birthplace")
+                            + " again."}
         store.set_current_place(pid, None)
-        return {"person": name, "current_place": None,
+        return {"person": name, "lives_in": None,
                 "note": "Cleared. Day-scale answers use the birthplace again."}
     try:
         found = timeplace.locate(place)
     except ValueError as exc:
         return {"error": str(exc)}
-    store.set_current_place(pid, found["name"], found["latitude"],
-                            found["longitude"], found["timezone"])
-    return {"person": name, "current_place": found["name"],
-            "timezone": found["timezone"],
-            "latitude": found["latitude"], "longitude": found["longitude"],
+    seen = {"timezone": found["timezone"], "latitude": found["latitude"],
+            "longitude": found["longitude"],
             "other_places_with_that_name": found["other_matches"]}
+    if until is None and starting is None:
+        store.set_current_place(pid, found["name"], found["latitude"],
+                                found["longitude"], found["timezone"])
+        return {"person": name, "lives_in": found["name"], **seen}
+    if until is None:
+        return {"error": "A stay needs its last day: pass `until` as "
+                         "YYYY-MM-DD. Ask the person when they come back."}
+    try:
+        last = date_cls.fromisoformat(until[:10]).isoformat()
+        first = (date_cls.fromisoformat(starting[:10]).isoformat()
+                 if starting else _today(pid, found["name"]))
+        store.set_stay(pid, found["name"], found["latitude"],
+                       found["longitude"], found["timezone"], first, last)
+    except ValueError as exc:
+        return {"error": f"{exc}. Dates are YYYY-MM-DD."}
+    home = store.current_place(pid)
+    return {"person": name, "stay": found["name"], "from": first,
+            "until": last, **seen,
+            "afterwards": (home["name"] if home else "the birthplace")
+                          + " is used again from the day after, by itself."}
 
 
 @tool
@@ -501,16 +561,17 @@ def panchanga_for(date: str, person_id: int | str | None = None,
     `date` is a calendar date where the person is. The answer is for the day
     that opens at sunrise on that date, there.
 
-    Computed for where the person is now: `place` if you pass one (a city, or
-    "City, Country", or coordinates), else the place saved with
-    set_current_place, else the birthplace. The answer says which was used.
+    Computed for where the person is on that date: `place` if you pass one (a
+    city, or "City, Country", or coordinates), else a stay recorded with
+    set_current_place that covers the date, else where they live, else the
+    birthplace. The answer says which was used.
     Every time in it is already the clock time of that place. Quote them as
     given and never convert a time yourself; if another place's time is
     wanted, call again with that place.
     """
     from . import panchanga, timeplace
     pid = _resolve(person_id)
-    where = _where(pid, place)
+    where = _where(pid, place, on=date)
     if "error" in where:
         return where
     row = _get_store().active_chart_row(pid)
@@ -779,33 +840,48 @@ def personal_day(date: str | None = None, days: int = 1,
     pid = _resolve(person_id)
     store = _get_store()
     chart = store.compute(store.active_chart_row(pid))
-    where = _where(pid, place)
-    if "error" in where:
-        return where
-    tz = where["timezone"]
-    if date:
-        when = date[:10]
-    else:
-        # Today is today where the person is, not where this program runs.
-        from datetime import datetime, timezone
-        from . import timeplace
-        when = timeplace.local(datetime.now(timezone.utc), tz).date().isoformat()
-    note = _where_note(where)
+    when = date[:10] if date else _today(pid, place)
+    first = _where(pid, place, on=when)
+    if "error" in first:
+        return first
+
+    # Someone travelling is in one place on Monday and another on Thursday:
+    # each date is judged for where they are on that date.
+    spots: dict[str, dict] = {}
+
+    def zone_on(day: str) -> str:
+        spots[day] = _where(pid, place, on=day)
+        return spots[day]["timezone"]
+
+    def scan(count: int) -> tuple[list[dict], dict]:
+        rows = personalday.local_days(chart, when, count, zone_on)
+        note = _where_note(first)
+        if len({w["name"] for w in spots.values()}) > 1:
+            for r in rows:
+                r["place"] = spots[r["date"]]["name"]
+            note["computed_for"] = ("more than one place: a stay begins or "
+                                    "ends inside these dates. Each day names "
+                                    "its own place.")
+            note["times_are"] = ("local clock time in the place named on "
+                                 "each day, already converted. Quote them as "
+                                 "given; do not convert them.")
+        return rows, note
 
     if days <= 1 and not favourable_only:
-        return {**note, **personalday.local_days(chart, when, 1, tz)[0]}
+        rows, note = scan(1)
+        return {**note, **rows[0]}
     if favourable_only:
         scanned = max(days, 30)
-        picked = [d for d in personalday.local_days(chart, when, scanned, tz)
-                  if d["verdict"] == "favourable"]
+        rows, note = scan(scanned)
+        picked = [d for d in rows if d["verdict"] == "favourable"]
         return {"from": when, "days_scanned": scanned, **note,
                 "favourable_count": len(picked),
                 "favourable_days": picked,
                 "note": "Days where the Tara and the Moon's placement from "
                         "your natal Moon both agree. Absence of a day here is "
                         "not a prohibition."}
-    return {"from": when, **note,
-            "days": personalday.local_days(chart, when, days, tz)}
+    rows, note = scan(days)
+    return {"from": when, **note, "days": rows}
 
 
 # ------------------------------------------------------- saturn from the moon

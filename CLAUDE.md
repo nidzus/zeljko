@@ -118,10 +118,14 @@ into their data folder. It is never committed.
 - Birth times are changed only as new chart versions with a note, never
   edited in place. When the person states a time was witnessed and exact,
   record it as exact and do not reopen the question.
-- A profile can hold where the person is now (`set_current_place`, the
-  `now_*` columns on `person`). `panchanga_for` and `personal_day` answer for
-  that place, falling back to the birthplace with a warning. It is readable
-  in the shared database for the same reason the birthplace is.
+- A profile can hold where the person lives (`set_current_place`, the
+  `now_*` columns on `person`) and one dated stay elsewhere (the `away_*`
+  columns: first day to last day). `panchanga_for` and `personal_day` answer
+  for the place the person is in on the date asked about: a place named in
+  the call, else a stay covering the date, else home, else the birthplace
+  with a warning. A stay lapses by itself; travel is recorded as a stay,
+  never by overwriting home. Places are readable in the shared database for
+  the same reason the birthplace is.
 - No tool hands out a clock time in universal time. Every time goes through
   `timeplace.clock()`, in the local time of the place the answer is for, with
   the offset shown; a plain date means that calendar date in that place.

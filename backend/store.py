@@ -122,7 +122,10 @@ class Store:
                         " ON person(account_id)")
         # From before a profile could say where the person is now.
         for col, kind in (("now_place", "TEXT"), ("now_lat", "REAL"),
-                          ("now_lon", "REAL"), ("now_tz", "TEXT")):
+                          ("now_lon", "REAL"), ("now_tz", "TEXT"),
+                          ("away_place", "TEXT"), ("away_lat", "REAL"),
+                          ("away_lon", "REAL"), ("away_tz", "TEXT"),
+                          ("away_from", "TEXT"), ("away_until", "TEXT")):
             if col not in cols:
                 self.db.execute(f"ALTER TABLE person ADD COLUMN {col} {kind}")
 
@@ -264,9 +267,15 @@ class Store:
                 (name, latitude, longitude, timezone_name, person_id))
             self.db.commit()
 
-    def current_place(self, person_id: int) -> dict | None:
-        """Where the person is now, or None when it was never said."""
+    def current_place(self, person_id: int,
+                      on: str | None = None) -> dict | None:
+        """Where the person lives, or None when it was never said. Given a
+        calendar date, a stay that covers that date wins over it."""
         self._own_person(person_id)
+        if on is not None:
+            away = self.stay(person_id)
+            if away and away["from"] <= on[:10] <= away["until"]:
+                return away
         row = self.db.execute(
             "SELECT now_place, now_lat, now_lon, now_tz FROM person WHERE id=?",
             (person_id,)).fetchone()
@@ -274,6 +283,42 @@ class Store:
             return None
         return {"name": row["now_place"], "latitude": row["now_lat"],
                 "longitude": row["now_lon"], "timezone": row["now_tz"]}
+
+    def set_stay(self, person_id: int, name: str | None,
+                 latitude: float | None = None, longitude: float | None = None,
+                 timezone_name: str | None = None, start: str | None = None,
+                 until: str | None = None) -> None:
+        """A stay away from home, first day to last day inclusive. A name of
+        None ends it. One at a time: a new stay replaces the old one."""
+        self._own_person(person_id)
+        if name is None:
+            latitude = longitude = timezone_name = start = until = None
+        else:
+            if None in (latitude, longitude, timezone_name, start, until):
+                raise ValueError(
+                    "a stay needs a place, a first day and a last day")
+            from datetime import date
+            if date.fromisoformat(start) > date.fromisoformat(until):
+                raise ValueError("a stay cannot end before it begins")
+        with self._lock:
+            self.db.execute(
+                "UPDATE person SET away_place=?, away_lat=?, away_lon=?,"
+                " away_tz=?, away_from=?, away_until=? WHERE id=?",
+                (name, latitude, longitude, timezone_name, start, until,
+                 person_id))
+            self.db.commit()
+
+    def stay(self, person_id: int) -> dict | None:
+        """The stay on record, past or future, or None."""
+        self._own_person(person_id)
+        row = self.db.execute(
+            "SELECT away_place, away_lat, away_lon, away_tz, away_from,"
+            " away_until FROM person WHERE id=?", (person_id,)).fetchone()
+        if row is None or row["away_place"] is None:
+            return None
+        return {"name": row["away_place"], "latitude": row["away_lat"],
+                "longitude": row["away_lon"], "timezone": row["away_tz"],
+                "from": row["away_from"], "until": row["away_until"]}
 
     def holdings(self, person_id: int) -> dict:
         """How much is stored under a profile: what removing it would take."""
@@ -581,6 +626,12 @@ class Store:
                " tools answer for this place, in its clock time."]
               if (now := self.current_place(person_id)) else
               ["NOW IN: not recorded; day-scale tools assume the birthplace."]),
+            # Dates as stored, never compared with today: this block has to
+            # read the same on every request.
+            *([f"AWAY: in {away['name']} from {away['from']} until"
+               f" {away['until']} inclusive. Day-scale tools use it for dates"
+               " in that span and the place above for all others."]
+              if (away := self.stay(person_id)) else []),
             f"CHART: ayanamsa {row['ayanamsa']}, whole-sign houses",
             f"  Lagna {ephemeris.dms(chart.ascendant.degrees_in_sign)}"
             f" {chart.ascendant.sign} ({chart.ascendant.sign_english}),"

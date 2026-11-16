@@ -155,15 +155,24 @@ def _stamp(dt, tzname: str | None) -> str:
 
 
 def local_days(chart: ephemeris.Chart, start_date: str, days: int,
-               tzname: str, hour: float = 9.0) -> list[dict]:
+               zone_on, hour: float = 9.0) -> list[dict]:
     """Day by day on the calendar of the place the person is in: each date is
-    judged at nine in the morning there, and labelled with that local date."""
+    judged at nine in the morning there, and labelled with that local date.
+
+    `zone_on` gives the timezone for a date, because someone travelling is in
+    one place on Monday and another on Thursday. A plain timezone name will
+    do when the place does not change.
+    """
     from datetime import date, timedelta
     from . import timeplace
+    if isinstance(zone_on, str):
+        fixed = zone_on
+        zone_on = lambda _day: fixed                               # noqa: E731
     first = date.fromisoformat(start_date[:10])
     out = []
     for offset in range(days):
         day = (first + timedelta(days=offset)).isoformat()
+        tzname = zone_on(day)
         jd = timeplace.julian_day(timeplace.instant(day, hour, tzname))
         out.append({"date": day, **at(chart, jd, tzname).as_dict()})
     return out

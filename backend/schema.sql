@@ -32,7 +32,16 @@ CREATE TABLE IF NOT EXISTS person (
     now_place   TEXT,
     now_lat     REAL,
     now_lon     REAL,
-    now_tz      TEXT
+    now_tz      TEXT,
+    -- A stay somewhere else with a first and a last day (a trip, a month
+    -- abroad). It wins over the place above for dates inside it and lapses
+    -- by itself afterwards, so nobody has to remember to switch back.
+    away_place  TEXT,
+    away_lat    REAL,
+    away_lon    REAL,
+    away_tz     TEXT,
+    away_from   TEXT,
+    away_until  TEXT
 );
 
 -- A computed nativity. Charts are VERSIONED, never edited in place: a

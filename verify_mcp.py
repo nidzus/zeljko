@@ -323,6 +323,7 @@ check("no time is left in universal time for someone to convert",
 saved = srv.set_current_place("Los Angeles, US", person_id=far)
 check("the place the person lives in is saved, with its timezone",
       saved["timezone"] == "America/Los_Angeles"
+      and saved["lives_in"] == "Los Angeles, US"
       and store.current_place(far)["name"] == "Los Angeles, US")
 now = srv.panchanga_for(ASKED, person_id=far)
 check("the day is then worked out for that place, without being told again",
@@ -332,7 +333,7 @@ check("the day is then worked out for that place, without being told again",
 check("in that place's clock time, summer time included",
       now["sunrise"].endswith("(UTC-07:00)")
       and "06:30" < now["sunrise"][11:16] < "07:45",
-      "9 March 2026 is two days into US summer time")
+      "10 March 2026 is two days into US summer time")
 
 
 def _instant(stamp):
@@ -375,6 +376,54 @@ srv.set_current_place("", person_id=far)
 check("clearing it goes back to the birthplace",
       store.current_place(far) is None
       and srv.panchanga_for(ASKED, person_id=far)["computed_for"] == "Lisbon")
+print("    A stay somewhere else has a first and a last day and ends itself.")
+home = srv.set_current_place("Los Angeles, US", person_id=far)
+check("saving where someone lives says so", home["lives_in"] == "Los Angeles, US")
+trip = srv.set_current_place("Tokyo", person_id=far, starting="2026-04-06",
+                             until="2026-04-12")
+check("a stay is recorded with its dates and leaves home alone",
+      trip["stay"] == "Tokyo, JP" and trip["from"] == "2026-04-06"
+      and trip["until"] == "2026-04-12"
+      and store.current_place(far)["name"] == "Los Angeles, US"
+      and "Los Angeles" in trip["afterwards"])
+at = lambda day: srv.panchanga_for(day, person_id=far)             # noqa: E731
+check("the day before it starts is still home",
+      at("2026-04-05")["computed_for"] == "Los Angeles, US")
+check("its first and last days are the stay, in that place's time",
+      at("2026-04-06")["computed_for"] == "Tokyo, JP"
+      and at("2026-04-12")["computed_for"] == "Tokyo, JP"
+      and "(UTC+09:00)" in at("2026-04-12")["sunrise"]
+      and "stay on record" in at("2026-04-12")["place_chosen"])
+check("the day after it ends is home again, with nothing done",
+      at("2026-04-13")["computed_for"] == "Los Angeles, US"
+      and "(UTC-07:00)" in at("2026-04-13")["sunrise"])
+across = srv.personal_day("2026-04-11", days=4, person_id=far)
+check("a scan across the return names the place on each day",
+      [d["place"] for d in across["days"]] == [
+          "Tokyo, JP", "Tokyo, JP", "Los Angeles, US", "Los Angeles, US"]
+      and "more than one place" in across["computed_for"]
+      and across["days"][1]["tara"]["changes_at"].endswith("(UTC+09:00)")
+      and across["days"][2]["tara"]["changes_at"].endswith("(UTC-07:00)"))
+inside = srv.personal_day("2026-04-07", days=3, person_id=far)
+check("a scan wholly inside one place does not clutter each day with it",
+      inside["computed_for"] == "Tokyo, JP"
+      and "place" not in inside["days"][0])
+check("the chart context shows the stay and its dates",
+      "AWAY: in Tokyo, JP from 2026-04-06 until 2026-04-12"
+      in srv.chart_context(person_id=far))
+check("a stay with no last day, or one that ends before it starts, is refused",
+      "error" in srv.set_current_place("Tokyo", person_id=far,
+                                       starting="2026-05-01")
+      and "error" in srv.set_current_place("Tokyo", person_id=far,
+                                           starting="2026-05-09",
+                                           until="2026-05-01")
+      and store.stay(far)["until"] == "2026-04-12")
+early = srv.set_current_place("", person_id=far)
+check("coming back early ends the stay and keeps home",
+      early["stay"] is None and store.stay(far) is None
+      and store.current_place(far)["name"] == "Los Angeles, US"
+      and at("2026-04-08")["computed_for"] == "Los Angeles, US")
+srv.set_current_place("", person_id=far)
 check("the instructions forbid converting, counting and claiming unrun checks",
       "Never convert a time between" in srv.INSTRUCTIONS
       and "tool call in this conversation did it" in srv.INSTRUCTIONS)

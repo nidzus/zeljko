@@ -193,6 +193,9 @@ def probes(pid, cid, conv, did):
         "set_current_place": lambda: A.set_current_place(
             pid, "Planted", 1.0, 1.0, "UTC"),
         "current_place": lambda: A.current_place(pid),
+        "set_stay": lambda: A.set_stay(pid, "Planted", 1.0, 1.0, "UTC",
+                                       "2026-01-01", "2026-01-02"),
+        "stay": lambda: A.stay(pid),
         "delete_person": lambda: A.delete_person(pid),
         "add_chart": lambda: A.add_chart(pid, 1990, 1, 1, 1, 1, 0, "x", *BG,
                                          TimeConfidence.EXACT),
