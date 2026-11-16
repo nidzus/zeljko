@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "zeljko",
   "display_name": "Zeljko, the jyotisha advisor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ask about a decision and get an answer from your computed Vedic chart, with a journal of what was advised and how it turned out.",
   "long_description": "Zeljko is a jyotisha (Vedic astrology) advisor that runs inside your own Claude. Tell it when and where you were born, then ask about a decision: take the job, move, commit, wait. The answer comes verdict first in plain words, then the timing, then the reasoning.\n\nEvery astronomical fact is computed on your computer by the Swiss Ephemeris; Claude interprets, it never calculates. The advisor is honest about your birth time: if it is only roughly known, claims that depend on the exact minute are refused rather than guessed.\n\nIt keeps a journal of what was advised, what you chose and how it turned out, so you can see over time whether the advice is any good.\n\nYour data stays on your computer, in a folder you choose. To begin, start a new chat and say: \"Set me up with Zeljko.\"\n\nThis is a tool for thinking a decision through. It is not professional advice of any kind, and it can be wrong.",
   "author": {
@@ -37,14 +37,14 @@
       "title": "Where to keep your data",
       "description": "Your profiles, charts and decision journal are stored in this folder, on this computer only. It is created the first time the advisor runs. The suggested place is fine for almost everyone.",
       "default": "${HOME}/jyotisha-data",
-      "required": true
+      "required": false
     },
     "backup_folder": {
       "type": "directory",
       "title": "Where backups go",
       "description": "When you ask Claude to back up your data, the copy is put here. For protection against the computer failing, choose a USB stick, a second drive or a cloud-synced folder.",
       "default": "${HOME}/jyotisha-backups",
-      "required": true
+      "required": false
     }
   },
   "prompts_generated": true,
