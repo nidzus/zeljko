@@ -130,6 +130,15 @@ into their data folder. It is never committed.
 - The people installing it are not technical. Anything they must do goes on
   the download page (`docs/index.html`) in plain words; the server's
   instructions tell Claude never to ask them for a command or a file edit.
+- No setting in `extension/manifest.json` may be `required`, and none may
+  carry a `default`. Claude Desktop leaves an extension switched off after
+  install, with a grey Save button, while a required setting is empty, and a
+  default does not count as filled in (read from Desktop's own code,
+  2026-11-15, after version 1.0.0 did exactly that). Empty settings fall back
+  to the folders in `paths.py`.
+- Claude Desktop's menus move between versions. On 2026-11-15 extensions were
+  under Settings → Customize → Connectors, not "Extensions". Do not give a
+  menu path from memory; ask for a screenshot.
 - A tool registered with `@tool` is offered everywhere, the shared server
   included. `@local_tool` is for tools that need the person's own database
   file (`back_up_data`); the shared server does not offer those.

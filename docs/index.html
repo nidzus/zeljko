@@ -80,12 +80,14 @@ footer{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line)}
   <h3>Open the file you downloaded</h3>
   <p>Double-click it. Claude Desktop opens and shows Zeljko with an
   <strong>Install</strong> button. Click it.</p>
-  <p>It asks for two folders: where to keep your data and where backups go. The
-  suggested places are fine &mdash; just continue.</p>
-  <p class="small">If double-clicking does nothing: open Claude Desktop, go to
-  <em>Settings</em>, then <em>Extensions</em>, and drag the downloaded file onto
-  that page. Claude may warn that the extension is not from a verified
-  company; that is expected, since this is free software made by one person.</p>
+  <p>Claude shows a warning that the extension can access your computer and
+  that its maker has not been verified by Anthropic. It shows this for every
+  extension that is not from its own catalogue. It is expected here: Zeljko is
+  free software made by one person, and its code is public.</p>
+  <p>If it shows two boxes for folders, leave both empty. There is nothing
+  else to set up.</p>
+  <p class="small">If double-clicking does nothing: right-click the file,
+  choose <em>Open with</em>, and pick <em>Claude</em>.</p>
 </section>
 
 <section class="step">
@@ -95,6 +97,10 @@ footer{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line)}
   <div class="say">Set me up with Zeljko.</div>
   <p>It will ask when and where you were born, how sure you are of the time,
   and for a few dated events from your life. Then you can ask it things.</p>
+  <p class="small">If Claude does not seem to know what Zeljko is: open
+  Claude Desktop&rsquo;s <em>Settings</em>, choose <em>Customize</em>, then
+  <em>Connectors</em>, click <em>Zeljko, the jyotisha advisor</em> and make
+  sure its switch is on. Then start a new chat.</p>
 </section>
 
 <h2>Things you can say</h2>
@@ -135,14 +141,14 @@ legal, financial or any other professional advice, and it can be wrong.</strong>
   <li>Before a profile is corrected or removed, a copy of your data is set
   aside automatically in that folder, so a mistake can be undone.</li>
   <li>Say <em>&ldquo;back up my data&rdquo;</em> now and then. For protection
-  against the computer failing, point the backup folder at a USB stick or a
-  cloud-synced folder (Claude Desktop &rarr; Settings &rarr; Extensions &rarr; Zeljko).</li>
+  against the computer failing, say where the copy should go, for example <em>&ldquo;back up my data to
+  my USB stick&rdquo;</em>.</li>
 </ul>
 
 <h2>Updating and removing</h2>
 <p>To update, download the newest file from this page and open it the same way.
 Your data is not touched. To remove Zeljko, uninstall it in Claude Desktop
-under Settings &rarr; Extensions; your data folder stays until you delete it yourself.</p>
+(Settings &rarr; Customize &rarr; Connectors &rarr; Zeljko &rarr; Uninstall); your data folder stays until you delete it yourself.</p>
 
 <footer class="small">
   <p>Free software under the AGPL-3.0, built on the Swiss Ephemeris.

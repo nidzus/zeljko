@@ -281,8 +281,7 @@ def main() -> int:
         out.unlink(missing_ok=True)      # never leave a file that failed
         raise
     print(f"\nBuilt: {out}  ({out.stat().st_size / 1e6:.0f} MB)")
-    print("To try it, double-click that file, or drag it onto Claude Desktop's")
-    print("Settings > Extensions page.")
+    print("To try it, double-click that file. It opens in Claude Desktop.")
     return 0
 
 

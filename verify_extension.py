@@ -105,13 +105,15 @@ check("both folders are settings the person can change",
       env == {"JYOTISHA_HOME": "${user_config.data_folder}",
               "JYOTISHA_BACKUPS": "${user_config.backup_folder}"}
       and all(manifest["user_config"][k]["type"] == "directory"
-              and manifest["user_config"][k]["default"].startswith("${HOME}/")
               for k in ("data_folder", "backup_folder")))
-check("the default data folder is the one the rest of the app uses",
-      manifest["user_config"]["data_folder"]["default"]
-      == "${HOME}/" + paths.DEFAULT_DATA.name
-      and manifest["user_config"]["backup_folder"]["default"]
-      == "${HOME}/" + paths.DEFAULT_BACKUPS.name)
+# Claude Desktop leaves an extension switched off after installing, and its
+# Save button grey, while a required setting is empty -- and a default does
+# not count as filled in. Nothing may be required, so it installs and runs
+# with no choices made; the folders then come from paths.py.
+check("nothing has to be filled in before it works",
+      not any(v.get("required") for v in manifest["user_config"].values()))
+check("no folder is suggested as text the person would have to make sense of",
+      not any("default" in v for v in manifest["user_config"].values()))
 check("the icon it names is there", (ROOT / "extension" / manifest["icon"]).exists())
 check("no API key or network service is asked for",
       not any(v.get("sensitive") for v in manifest["user_config"].values())

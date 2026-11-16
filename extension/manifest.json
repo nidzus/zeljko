@@ -34,16 +34,14 @@
   "user_config": {
     "data_folder": {
       "type": "directory",
-      "title": "Where to keep your data",
-      "description": "Your profiles, charts and decision journal are stored in this folder, on this computer only. It is created the first time the advisor runs. The suggested place is fine for almost everyone.",
-      "default": "${HOME}/jyotisha-data",
+      "title": "Where to keep your data (optional)",
+      "description": "Leave this empty. Your profiles, charts and decision journal are then kept in a folder called jyotisha-data in your home folder, on this computer only. Choose a folder here only if you want them somewhere else.",
       "required": false
     },
     "backup_folder": {
       "type": "directory",
-      "title": "Where backups go",
-      "description": "When you ask Claude to back up your data, the copy is put here. For protection against the computer failing, choose a USB stick, a second drive or a cloud-synced folder.",
-      "default": "${HOME}/jyotisha-backups",
+      "title": "Where backups go (optional)",
+      "description": "Leave this empty and backups go to a folder called jyotisha-backups in your home folder. For protection against the computer failing, choose a USB stick, a second drive or a cloud-synced folder.",
       "required": false
     }
   },
