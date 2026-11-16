@@ -555,7 +555,9 @@ class Store:
 
         events = self.life_events(person_id)
         if events:
-            out.append("LIFE EVENTS:")
+            # The count is stated so it is never counted by eye from a long
+            # list, which comes out wrong.
+            out.append(f"LIFE EVENTS ({len(events)} on record):")
             for e in events:
                 cat = f" [{e['category']}]" if e["category"] else ""
                 out.append(f"  {e['happened_on']} ({e['precision']}){cat} {e['title']}")
