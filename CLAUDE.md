@@ -139,6 +139,10 @@ into their data folder. It is never committed.
 - Claude Desktop's menus move between versions. On 2026-11-15 extensions were
   under Settings → Customize → Connectors, not "Extensions". Do not give a
   menu path from memory; ask for a screenshot.
+- Claude Desktop asks permission per tool. Every tool declares whether it
+  only reads (`marks()` in `mcp_server.py`); a tool that changes data must be
+  named in `WRITES` there. Unmarked, all tools land in one "Other tools"
+  group that needs approval one by one.
 - A tool registered with `@tool` is offered everywhere, the shared server
   included. `@local_tool` is for tools that need the person's own database
   file (`back_up_data`); the shared server does not offer those.

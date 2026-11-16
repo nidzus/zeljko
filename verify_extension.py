@@ -76,6 +76,16 @@ server = extension.build()
 offered = sorted(t.name for t in asyncio.run(server.list_tools()))
 expected = sorted([f.__name__ for f in mcp_server.TOOLS + mcp_server.LOCAL_TOOLS]
                   + ["guidance"])
+listing = {t.name: t.annotations for t in asyncio.run(server.list_tools())}
+check("every tool says whether it only reads or changes data",
+      all(a is not None and a.read_only_hint is not None for a in listing.values()),
+      str([n for n, a in listing.items() if a is None]))
+check("the tools that change data are exactly the ones named as writing",
+      {n for n, a in listing.items() if a and a.read_only_hint is False}
+      == mcp_server.WRITES and mcp_server.WRITES <= set(listing))
+check("only removing a profile is declared as able to take data away",
+      {n for n, a in listing.items() if a and a.destructive_hint}
+      == mcp_server.DESTRUCTIVE)
 check("every local tool is offered, plus guidance", offered == expected,
       f"{len(offered)} tools")
 prompts = sorted(p.name for p in asyncio.run(server.list_prompts()))

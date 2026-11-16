@@ -472,7 +472,7 @@ def build(accounts: Accounts, public_url: str) -> MCPServer:
             revocation_options=RevocationOptions(enabled=True)))
 
     for fn in mcp_server.TOOLS:
-        server.tool()(fn)
+        mcp_server.register(server, fn)
 
     guides.attach(server)
     _add_pages(server, provider)

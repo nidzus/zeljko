@@ -41,7 +41,10 @@ def attach(server) -> None:
     Claude Desktop extension."""
     from mcp.server.mcpserver.exceptions import ToolError
 
-    @server.tool()
+    from mcp_types import ToolAnnotations
+
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=True,
+                                             openWorldHint=False))
     def guidance(topic: str) -> str:
         """How to do the three things this advisor is for. Read the relevant
         one before doing it for the first time in a conversation.

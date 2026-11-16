@@ -81,7 +81,7 @@ def build() -> MCPServer:
     server = MCPServer(name="zeljko", title="Zeljko, the jyotisha advisor",
                        instructions=INSTRUCTIONS)
     for fn in mcp_server.TOOLS + mcp_server.LOCAL_TOOLS:
-        server.tool()(fn)
+        mcp_server.register(server, fn)
     guidance.attach(server)
     return server
 

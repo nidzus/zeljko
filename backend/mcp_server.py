@@ -16,6 +16,7 @@ import sqlite3
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
+from mcp_types import ToolAnnotations
 
 from . import tools
 from .advisor import SYSTEM_RULES
@@ -93,10 +94,36 @@ mcp = MCPServer(
 # same set over HTTP without a second list to keep in step.
 TOOLS: list = []
 
+# The tools that change what is stored. Every other tool only looks things up
+# or computes, and is declared read-only, so Claude Desktop can let a person
+# approve all of those together instead of one prompt per tool. A new tool
+# that writes must be named here, or it is offered as harmless when it is
+# not. verify_extension.py checks every tool carries one mark or the other.
+WRITES = {"create_profile", "correct_profile", "remove_profile",
+          "add_life_event", "record_decision", "record_choice",
+          "record_outcome", "apply_rectification", "back_up_data"}
+# Of those, the ones that can take something away.
+DESTRUCTIVE = {"remove_profile"}
+
+
+def marks(name: str) -> ToolAnnotations:
+    """What a tool declares about itself. Nothing here reaches outside the
+    person's own computer, so none is open-world."""
+    if name not in WRITES:
+        return ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+    return ToolAnnotations(readOnlyHint=False, openWorldHint=False,
+                           destructiveHint=name in DESTRUCTIVE)
+
+
+def register(server, fn):
+    """Offer one tool on a server, with its marks. The only way a tool is
+    registered, here and in remote.py, extension.py and guidance.py."""
+    return server.tool(annotations=marks(fn.__name__))(fn)
+
 
 def tool(fn):
     TOOLS.append(fn)
-    return mcp.tool()(fn)
+    return register(mcp, fn)
 
 
 # Tools that only make sense where the database is the person's own file on
@@ -106,7 +133,7 @@ LOCAL_TOOLS: list = []
 
 def local_tool(fn):
     LOCAL_TOOLS.append(fn)
-    return mcp.tool()(fn)
+    return register(mcp, fn)
 
 
 # Run locally, this is a single-user process with one long-lived connection,
