@@ -264,8 +264,8 @@ try:
     check("the guidance tool serves the onboarding steps",
           not err and "How well that time is known" in guide)
     tools = A.rpc("tools/list").json()["result"]["tools"]
-    check("all twenty-nine shared tools are there, plus guidance",
-          len(tools) == 30, f"{len(tools)} tools")
+    check("all thirty shared tools are there, plus guidance",
+          len(tools) == 31, f"{len(tools)} tools")
     check("the backup tool, which is for a database of one's own, is not",
           "back_up_data" not in {t["name"] for t in tools})
 
@@ -316,7 +316,8 @@ try:
             "varga": 9, "body": "Saturn", "candidates": ["10:00"], "house": 10,
             "birth_time": "10:00", "note": "planted", "question": "planted?",
             "verdict": "planted", "happened_on": "2020-01-01", "title": "planted",
-            "chose": "planted", "outcome": "planted", "rating": 1}
+            "chose": "planted", "outcome": "planted", "rating": 1,
+            "place": "Lisbon"}
     NO_IDENTIFIER = {"list_people", "search_places", "parse_coordinates",
                      "create_profile", "guidance"}
     ABSENT_ID, ABSENT_NAME = 987654321, "Nemo Nobody"

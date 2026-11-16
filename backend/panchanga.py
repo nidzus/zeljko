@@ -151,15 +151,27 @@ class Limb:
     index: int
     ends: datetime
 
-    def as_dict(self) -> dict:
+    def as_dict(self, stamp=None) -> dict:
+        stamp = stamp or (lambda dt: dt.strftime("%Y-%m-%d %H:%M UT"))
         return {"name": self.name, "index": self.index,
-                "ends": self.ends.strftime("%Y-%m-%d %H:%M UT")}
+                "ends": stamp(self.ends)}
 
 
 def panchanga(jd: float, latitude: float, longitude: float,
-              ayanamsa: str = "LAHIRI") -> dict:
-    """The five limbs in force, reckoned from the sunrise that opens the day."""
+              ayanamsa: str = "LAHIRI", tzname: str | None = None) -> dict:
+    """The five limbs in force, reckoned from the sunrise that opens the day.
+
+    With a timezone, every time is the clock time there, offset shown, and
+    nobody has to convert anything. Without one they are universal time.
+    """
     rise, sset = sun_times(jd, latitude, longitude)
+    if tzname:
+        from . import timeplace
+        stamp = lambda dt: timeplace.clock(dt, tzname)            # noqa: E731
+        hour = lambda dt: timeplace.clock(dt, tzname, False)      # noqa: E731
+    else:
+        stamp = lambda dt: dt.strftime("%Y-%m-%d %H:%M UT")       # noqa: E731
+        hour = lambda dt: dt.strftime("%H:%M UT")                 # noqa: E731
 
     # Traditional reckoning: the day's limbs are those standing at sunrise.
     t = _tithi_index(rise, ayanamsa)
@@ -181,27 +193,29 @@ def panchanga(jd: float, latitude: float, longitude: float,
     rahu_start = rise + (n - 1) * part
 
     return {
-        "reckoned_from_sunrise": dasha.jd_to_datetime(rise).strftime(
-            "%Y-%m-%d %H:%M UT"),
-        "sunrise": dasha.jd_to_datetime(rise).strftime("%Y-%m-%d %H:%M UT"),
-        "sunset": dasha.jd_to_datetime(sset).strftime("%Y-%m-%d %H:%M UT"),
+        "reckoned_from_sunrise": stamp(dasha.jd_to_datetime(rise)),
+        "sunrise": stamp(dasha.jd_to_datetime(rise)),
+        "sunset": stamp(dasha.jd_to_datetime(sset)),
         "tithi": {**Limb(f"{paksha} {tithi_name}", t,
                          dasha.jd_to_datetime(
-                             _ends_at(rise, _tithi_index, ayanamsa))).as_dict(),
+                             _ends_at(rise, _tithi_index, ayanamsa))
+                         ).as_dict(stamp),
                   "paksha": paksha},
         "vara": {"name": sanskrit, "english": english, "lord": lord},
         "nakshatra": Limb(ephemeris.NAKSHATRAS[nak], nak,
                           dasha.jd_to_datetime(
-                              _ends_at(rise, _nakshatra_index, ayanamsa))).as_dict(),
+                              _ends_at(rise, _nakshatra_index, ayanamsa))
+                          ).as_dict(stamp),
         "yoga": Limb(YOGA_NAMES[yoga], yoga,
                      dasha.jd_to_datetime(
-                         _ends_at(rise, _yoga_index, ayanamsa))).as_dict(),
+                         _ends_at(rise, _yoga_index, ayanamsa))).as_dict(stamp),
         "karana": Limb(karana_name(kar), kar,
                        dasha.jd_to_datetime(
-                           _ends_at(rise, _karana_index, ayanamsa))).as_dict(),
+                           _ends_at(rise, _karana_index, ayanamsa))
+                       ).as_dict(stamp),
         "rahu_kaal": {
-            "from": dasha.jd_to_datetime(rahu_start).strftime("%H:%M UT"),
-            "to": dasha.jd_to_datetime(rahu_start + part).strftime("%H:%M UT"),
+            "from": hour(dasha.jd_to_datetime(rahu_start)),
+            "to": hour(dasha.jd_to_datetime(rahu_start + part)),
             "note": "Traditionally avoided for starting things. One eighth of "
                     "daylight, its position set by the weekday.",
         },

@@ -57,6 +57,27 @@ Never call a day good or bad from panchanga_for alone. The panchanga is the
 same for everyone standing in the same place; personal_day is counted from
 this person's natal Moon and routinely disagrees with it. Check both.
 
+Both are worked out for where the person is NOW, not where they were born.
+chart_context says whether that place is on record ("NOW IN"). If it is not,
+ask where they live before the first day-scale answer and save it with
+set_current_place; a reply that carries place_warning was computed for the
+birthplace and is wrong for anyone living elsewhere.
+
+NUMBERS YOU DID NOT COMPUTE
+
+Every clock time a tool returns is already in the local time of the place it
+names, with the offset shown. Quote it exactly. Never convert a time between
+zones yourself, never add or subtract hours, never work out a weekday or a
+count of days in your head. If a time is wanted for another place, call the
+tool again with that place. If a count is wanted, use the count the tool
+states (chart_context states how many life events are on record; a list of
+favourable days states how many it holds). If no tool gives the number, say
+you do not have it rather than estimate.
+
+Never say you checked, recounted, verified or computed something unless a
+tool call in this conversation did it. If you worked something out by reading
+or by reasoning, say so in those words.
+
 If someone describes a long heavy stretch of years, or asks about Sade Sati,
 call saturn_from_moon. It is measured from the Moon, so transits_at cannot
 see it and will miss it entirely.
@@ -100,6 +121,7 @@ TOOLS: list = []
 # that writes must be named here, or it is offered as harmless when it is
 # not. verify_extension.py checks every tool carries one mark or the other.
 WRITES = {"create_profile", "correct_profile", "remove_profile",
+          "set_current_place",
           "add_life_event", "record_decision", "record_choice",
           "record_outcome", "apply_rectification", "back_up_data"}
 # Of those, the ones that can take something away.
@@ -386,8 +408,88 @@ def add_life_event(happened_on: str, title: str, category: str | None = None,
 # ------------------------------------------------------ day scale and weight
 
 
+def _where(pid: int, place: str | None = None) -> dict:
+    """The place a day-scale answer is worked out for, and how it was chosen:
+    the one named in the call, else the one saved for the person, else the
+    birthplace."""
+    from . import timeplace
+    store = _get_store()
+    if place and place.strip():
+        try:
+            return {**timeplace.locate(place), "chosen": "named in this call"}
+        except ValueError as exc:
+            return {"error": str(exc)}
+    saved = store.current_place(pid)
+    if saved:
+        return {**saved, "other_matches": [],
+                "chosen": "saved as where this person is now"}
+    row = store.active_chart_row(pid)
+    return {"name": row["place_name"], "latitude": row["latitude"],
+            "longitude": row["longitude"],
+            "timezone": timeplace.timezone_for(row["latitude"],
+                                               row["longitude"]),
+            "other_matches": [], "chosen": "birthplace"}
+
+
+def _where_note(where: dict) -> dict:
+    out = {"computed_for": where["name"],
+           "times_are": f"local clock time in {where['name']} "
+                        f"({where['timezone']}), already converted. Quote "
+                        "them as given; do not convert them."}
+    if where["chosen"] == "birthplace":
+        out["place_warning"] = (
+            "No current place is recorded, so this is for the BIRTHPLACE. If "
+            "the person is somewhere else now, ask where, save it with "
+            "set_current_place, and call this again. Sunrise, the day's "
+            "limbs and every time here depend on it.")
+    else:
+        out["place_chosen"] = where["chosen"]
+    if where.get("other_matches"):
+        out["other_places_with_that_name"] = where["other_matches"]
+    return out
+
+
 @tool
-def panchanga_for(date: str, person_id: int | str | None = None) -> dict:
+def set_current_place(place: str, person_id: int | str | None = None) -> dict:
+    """Record where a person is now, when it is not where they were born.
+
+    Day-scale answers depend on it: sunrise, the limbs of the day, Rahu Kaal
+    and the hour a favourable stretch begins are different in another city,
+    and are given in that city's clock time. Ask once ("where are you living
+    now?") and save it here; panchanga_for and personal_day then use it
+    without being told. Call it again when the person moves or is travelling
+    for a while.
+
+    `place` is a city ("Lisbon"), a city and country ("Springfield, US"), or
+    coordinates pasted from a map. Pass an empty string to clear it and go
+    back to the birthplace. Read the reply: if `other_places_with_that_name`
+    is not empty, confirm with the person which one they meant.
+
+    This changes nothing about the birth chart.
+    """
+    from . import timeplace
+    pid = _resolve(person_id)
+    store = _get_store()
+    name = store.person(pid)["name"]
+    if not place.strip():
+        store.set_current_place(pid, None)
+        return {"person": name, "current_place": None,
+                "note": "Cleared. Day-scale answers use the birthplace again."}
+    try:
+        found = timeplace.locate(place)
+    except ValueError as exc:
+        return {"error": str(exc)}
+    store.set_current_place(pid, found["name"], found["latitude"],
+                            found["longitude"], found["timezone"])
+    return {"person": name, "current_place": found["name"],
+            "timezone": found["timezone"],
+            "latitude": found["latitude"], "longitude": found["longitude"],
+            "other_places_with_that_name": found["other_matches"]}
+
+
+@tool
+def panchanga_for(date: str, person_id: int | str | None = None,
+                  place: str | None = None) -> dict:
     """The five limbs of a day: tithi, weekday, nakshatra, yoga and karana,
     each with the time it ends, plus sunrise, sunset and Rahu Kaal.
 
@@ -396,13 +498,27 @@ def panchanga_for(date: str, person_id: int | str | None = None) -> dict:
     and the weekday matter and the dashas do not move at all. Do not reach for
     it on a career or relocation question; nothing here changes those.
 
-    Computed for the birthplace unless the person says where they are now.
+    `date` is a calendar date where the person is. The answer is for the day
+    that opens at sunrise on that date, there.
+
+    Computed for where the person is now: `place` if you pass one (a city, or
+    "City, Country", or coordinates), else the place saved with
+    set_current_place, else the birthplace. The answer says which was used.
+    Every time in it is already the clock time of that place. Quote them as
+    given and never convert a time yourself; if another place's time is
+    wanted, call again with that place.
     """
-    from . import panchanga
+    from . import panchanga, timeplace
     pid = _resolve(person_id)
+    where = _where(pid, place)
+    if "error" in where:
+        return where
     row = _get_store().active_chart_row(pid)
-    return panchanga.panchanga(tools._jd(date), row["latitude"],
-                               row["longitude"], row["ayanamsa"])
+    # Noon on that date, there: the sunrise before it is that day's sunrise.
+    jd = timeplace.julian_day(timeplace.instant(date, 12.0, where["timezone"]))
+    return {"date": date[:10], **_where_note(where),
+            **panchanga.panchanga(jd, where["latitude"], where["longitude"],
+                                  row["ayanamsa"], where["timezone"])}
 
 
 @tool
@@ -635,8 +751,14 @@ def apply_rectification(birth_time: str, note: str,
 @tool
 def personal_day(date: str | None = None, days: int = 1,
                  favourable_only: bool = False,
-                 person_id: int | str | None = None) -> dict:
+                 person_id: int | str | None = None,
+                 place: str | None = None) -> dict:
     """Tara bala and Chandra bala: whether a day suits THIS person.
+
+    Dates are calendar dates where the person is now (see panchanga_for for
+    how that place is chosen), each judged at nine in the morning there. The
+    time a Tara changes is that place's clock time, already converted: quote
+    it as given and never convert a time yourself.
 
     The panchanga is identical for everyone standing in the same place. These
     two are counted from the natal Moon, so two people meet the same tithi and
@@ -657,20 +779,33 @@ def personal_day(date: str | None = None, days: int = 1,
     pid = _resolve(person_id)
     store = _get_store()
     chart = store.compute(store.active_chart_row(pid))
-    when = date or date_cls.today().isoformat()
-    y, mo, d = (int(x) for x in when.split("-"))
-    jd = __import__("swisseph").julday(y, mo, d, 6.0)
+    where = _where(pid, place)
+    if "error" in where:
+        return where
+    tz = where["timezone"]
+    if date:
+        when = date[:10]
+    else:
+        # Today is today where the person is, not where this program runs.
+        from datetime import datetime, timezone
+        from . import timeplace
+        when = timeplace.local(datetime.now(timezone.utc), tz).date().isoformat()
+    note = _where_note(where)
 
     if days <= 1 and not favourable_only:
-        return {"date": when, **personalday.at(chart, jd).as_dict()}
+        return {**note, **personalday.local_days(chart, when, 1, tz)[0]}
     if favourable_only:
-        picked = personalday.best_days(chart, jd, max(days, 30))
-        return {"from": when, "days_scanned": max(days, 30),
+        scanned = max(days, 30)
+        picked = [d for d in personalday.local_days(chart, when, scanned, tz)
+                  if d["verdict"] == "favourable"]
+        return {"from": when, "days_scanned": scanned, **note,
+                "favourable_count": len(picked),
                 "favourable_days": picked,
                 "note": "Days where the Tara and the Moon's placement from "
                         "your natal Moon both agree. Absence of a day here is "
                         "not a prohibition."}
-    return {"from": when, "days": personalday.window(chart, jd, days)}
+    return {"from": when, **note,
+            "days": personalday.local_days(chart, when, days, tz)}
 
 
 # ------------------------------------------------------- saturn from the moon

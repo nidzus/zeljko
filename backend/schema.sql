@@ -25,7 +25,14 @@ CREATE TABLE IF NOT EXISTS person (
     name        TEXT NOT NULL,
     relation    TEXT,                 -- "self", "partner", ...
     notes       TEXT,
-    created_at  TEXT NOT NULL
+    created_at  TEXT NOT NULL,
+    -- Where the person is now, when that is not where they were born. Day-
+    -- scale answers (sunrise, the day's limbs, a good day) are worked out for
+    -- this place and given in its clock time. Empty means the birthplace.
+    now_place   TEXT,
+    now_lat     REAL,
+    now_lon     REAL,
+    now_tz      TEXT
 );
 
 -- A computed nativity. Charts are VERSIONED, never edited in place: a

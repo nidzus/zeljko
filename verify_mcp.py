@@ -56,7 +56,8 @@ expected = sorted(["list_people", "chart_context", "dasha_at", "transits_at",
                    "propose_rectification", "apply_rectification",
                    "chart_image", "saturn_from_moon", "personal_day",
                    "graha_shadbala", "transit_contacts", "test_birth_time",
-                   "correct_profile", "remove_profile", "back_up_data"])
+                   "correct_profile", "remove_profile", "back_up_data",
+                   "set_current_place"])
 check("every tool is registered", names == expected, ", ".join(names))
 check("each tool carries a description",
       all(t.description for t in schemas))
@@ -297,6 +298,86 @@ except Exception as e:
 check("the backup tool is kept off the shared server",
       srv.back_up_data in srv.LOCAL_TOOLS and srv.back_up_data not in srv.TOOLS
       and srv.remove_profile in srv.TOOLS and srv.correct_profile in srv.TOOLS)
+
+print()
+print("=" * 72)
+print("14. Days and clock times are for where the person is, already converted")
+print("    A made-up person born in Lisbon who now lives in Los Angeles. The")
+print("    tools once answered in universal time for the birthplace, and for")
+print("    a plain date gave the day before.")
+import datetime as _dt
+from zoneinfo import ZoneInfo as _Zone
+far = srv.create_profile(name="Faraway Test", birth_date="1980-03-04",
+                         birth_time="10:15", place_name="Lisbon",
+                         latitude=38.72509, longitude=-9.1498,
+                         time_confidence="exact")["person_id"]
+ASKED = "2026-03-10"                      # a Tuesday
+born = srv.panchanga_for(ASKED, person_id=far)
+check("with no current place it answers for the birthplace, and warns",
+      born["computed_for"] == "Lisbon" and "BIRTHPLACE" in born["place_warning"])
+check("a plain date gives that date's own day, not the one before",
+      born["sunrise"].startswith(ASKED) and born["vara"]["english"] == "Tuesday",
+      f"{born['sunrise']}, {born['vara']['english']}")
+check("no time is left in universal time for someone to convert",
+      " UT" not in str(born) and "(UTC+00:00)" in born["sunrise"])
+saved = srv.set_current_place("Los Angeles, US", person_id=far)
+check("the place the person lives in is saved, with its timezone",
+      saved["timezone"] == "America/Los_Angeles"
+      and store.current_place(far)["name"] == "Los Angeles, US")
+now = srv.panchanga_for(ASKED, person_id=far)
+check("the day is then worked out for that place, without being told again",
+      now["computed_for"] == "Los Angeles, US" and "place_warning" not in now
+      and now["sunrise"].startswith(ASKED) and now["vara"]["english"] == "Tuesday",
+      f"sunrise {now['sunrise']}")
+check("in that place's clock time, summer time included",
+      now["sunrise"].endswith("(UTC-07:00)")
+      and "06:30" < now["sunrise"][11:16] < "07:45",
+      "9 March 2026 is two days into US summer time")
+
+
+def _instant(stamp):
+    """A stamped time back to the instant it names, for comparing."""
+    hh, mm = int(stamp[-6:-4]), int(stamp[-3:-1])
+    off = _dt.timedelta(hours=hh, minutes=mm) * (-1 if stamp[-7] == "-" else 1)
+    return _dt.datetime.fromisoformat(stamp[:16]) - off
+
+
+check("the same moment reads the same once both are put on one clock",
+      _instant(now["tithi"]["ends"]) == _instant(
+          srv.panchanga_for(ASKED, person_id=far, place="Los Angeles, US")
+          ["tithi"]["ends"])
+      and now["tithi"]["ends"] == _dt.datetime.fromisoformat(
+          _instant(now["tithi"]["ends"]).isoformat() + "+00:00").astimezone(
+          _Zone("America/Los_Angeles")).strftime("%Y-%m-%d %H:%M") + " (UTC-07:00)")
+tokyo = srv.panchanga_for(ASKED, person_id=far, place="Tokyo")
+check("a place named in the call wins for that call only",
+      tokyo["computed_for"] == "Tokyo, JP" and "(UTC+09:00)" in tokyo["sunrise"]
+      and srv.panchanga_for(ASKED, person_id=far)["computed_for"]
+      == "Los Angeles, US")
+day = srv.personal_day(ASKED, person_id=far)
+check("the personal day is that local date, its change time on the same clock",
+      day["date"] == ASKED and day["computed_for"] == "Los Angeles, US"
+      and day["tara"]["changes_at"].endswith("(UTC-07:00)"),
+      day["tara"]["changes_at"])
+scan = srv.personal_day(ASKED, days=5, person_id=far)
+check("a scan steps through local calendar dates, one each",
+      [d["date"] for d in scan["days"]] == [
+          "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-14"])
+good = srv.personal_day(ASKED, favourable_only=True, person_id=far)
+check("a list of favourable days states its own count",
+      good["favourable_count"] == len(good["favourable_days"]))
+check("the chart context says where the person is, and counts the events",
+      "NOW IN: Los Angeles, US" in srv.chart_context(person_id=far))
+check("a place that cannot be found is refused, and nothing is saved",
+      "error" in srv.set_current_place("Nowhereville123", person_id=far)
+      and store.current_place(far)["name"] == "Los Angeles, US")
+srv.set_current_place("", person_id=far)
+check("clearing it goes back to the birthplace",
+      store.current_place(far) is None
+      and srv.panchanga_for(ASKED, person_id=far)["computed_for"] == "Lisbon")
+check("the instructions forbid converting, counting and claiming unrun checks",
+      "Never convert a time between" in srv.INSTRUCTIONS
+      and "tool call in this conversation did it" in srv.INSTRUCTIONS)
 
 print()
 print("=" * 72)

@@ -97,8 +97,10 @@ class PersonalDay:
         }
 
 
-def at(chart: ephemeris.Chart, jd: float) -> PersonalDay:
-    """Tara bala and Chandra bala for this chart, at this moment."""
+def at(chart: ephemeris.Chart, jd: float,
+       tzname: str | None = None) -> PersonalDay:
+    """Tara bala and Chandra bala for this chart, at this moment. With a
+    timezone, the time the Tara changes is the clock time there."""
     ayanamsa = chart.ayanamsa_name
     natal_moon = chart.get("Moon")
     moon_lon = _moon(jd, ayanamsa)
@@ -137,13 +139,34 @@ def at(chart: ephemeris.Chart, jd: float) -> PersonalDay:
     return PersonalDay(
         tara=name, tara_meaning=meaning, tara_number=index + 1,
         tara_favourable=good_tara,
-        tara_changes_at=dasha.jd_to_datetime(
-            _changes_at(jd, natal_moon.nakshatra_index, ayanamsa)
-        ).strftime("%Y-%m-%d %H:%M UT"),
+        tara_changes_at=_stamp(dasha.jd_to_datetime(
+            _changes_at(jd, natal_moon.nakshatra_index, ayanamsa)), tzname),
         cycle=cycle,
         chandra_house=house, chandra_favourable=good_chandra,
         moon_nakshatra=ephemeris.NAKSHATRAS[moon_nak],
         verdict=verdict, note=" ".join(notes))
+
+
+def _stamp(dt, tzname: str | None) -> str:
+    if tzname:
+        from . import timeplace
+        return timeplace.clock(dt, tzname)
+    return dt.strftime("%Y-%m-%d %H:%M UT")
+
+
+def local_days(chart: ephemeris.Chart, start_date: str, days: int,
+               tzname: str, hour: float = 9.0) -> list[dict]:
+    """Day by day on the calendar of the place the person is in: each date is
+    judged at nine in the morning there, and labelled with that local date."""
+    from datetime import date, timedelta
+    from . import timeplace
+    first = date.fromisoformat(start_date[:10])
+    out = []
+    for offset in range(days):
+        day = (first + timedelta(days=offset)).isoformat()
+        jd = timeplace.julian_day(timeplace.instant(day, hour, tzname))
+        out.append({"date": day, **at(chart, jd, tzname).as_dict()})
+    return out
 
 
 def window(chart: ephemeris.Chart, start_jd: float, days: int = 14,

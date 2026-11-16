@@ -118,6 +118,18 @@ into their data folder. It is never committed.
 - Birth times are changed only as new chart versions with a note, never
   edited in place. When the person states a time was witnessed and exact,
   record it as exact and do not reopen the question.
+- A profile can hold where the person is now (`set_current_place`, the
+  `now_*` columns on `person`). `panchanga_for` and `personal_day` answer for
+  that place, falling back to the birthplace with a warning. It is readable
+  in the shared database for the same reason the birthplace is.
+- No tool hands out a clock time in universal time. Every time goes through
+  `timeplace.clock()`, in the local time of the place the answer is for, with
+  the offset shown; a plain date means that calendar date in that place.
+  Claude is told never to convert a time, count a list or claim a check it
+  did not run, but an instruction can be ignored: if an answer needs a
+  number, a tool must state it. (Found 2026-11-16: Claude miscounted 31 life
+  events as 29 and converted times by hand; `panchanga_for` also returned
+  the day before the date asked for.)
 - Only answers recorded with `record_decision` reach the journal. Questions
   asked in other apps or plain chat are not journaled.
 

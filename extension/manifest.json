@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "zeljko",
   "display_name": "Zeljko, the jyotisha advisor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Ask about a decision and get an answer from your computed Vedic chart, with a journal of what was advised and how it turned out.",
   "long_description": "Zeljko is a jyotisha (Vedic astrology) advisor that runs inside your own Claude. Tell it when and where you were born, then ask about a decision: take the job, move, commit, wait. The answer comes verdict first in plain words, then the timing, then the reasoning.\n\nEvery astronomical fact is computed on your computer by the Swiss Ephemeris; Claude interprets, it never calculates. The advisor is honest about your birth time: if it is only roughly known, claims that depend on the exact minute are refused rather than guessed.\n\nIt keeps a journal of what was advised, what you chose and how it turned out, so you can see over time whether the advice is any good.\n\nYour data stays on your computer, in a folder you choose. To begin, start a new chat and say: \"Set me up with Zeljko.\"\n\nThis is a tool for thinking a decision through. It is not professional advice of any kind, and it can be wrong.",
   "author": {
@@ -53,6 +53,7 @@
     {"name": "correct_profile", "description": "Fix a mistake in a profile; birth data becomes a new chart version"},
     {"name": "remove_profile", "description": "Delete a profile, in two steps, after a safety copy"},
     {"name": "back_up_data", "description": "Make a dated backup copy of all your data"},
+    {"name": "set_current_place", "description": "Record where you live now, so days and times are worked out for there"},
     {"name": "search_places", "description": "Find a birthplace by city name, offline"},
     {"name": "parse_coordinates", "description": "Read pasted map coordinates"},
     {"name": "chart_context", "description": "The birth chart, life events, and what the birth time supports"},

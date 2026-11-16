@@ -159,3 +159,83 @@ def resolve(
         ambiguous=ambiguous,
         nonexistent=nonexistent,
     )
+
+
+# ------------------------------------------------------ clock times, for people
+#
+# The tools once handed out times in universal time and left the conversion to
+# whoever read them. A conversion done in the head is a wrong hour sooner or
+# later, and a wrong hour moves which day is recommended. So every clock time
+# that leaves a tool goes through clock(), already in the time of the place
+# the person is in.
+
+
+def local(dt: datetime, tzname: str) -> datetime:
+    """An instant as the clock on the wall reads it in that timezone."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(ZoneInfo(tzname))
+
+
+def offset_label(dt: datetime, tzname: str) -> str:
+    minutes = int(local(dt, tzname).utcoffset().total_seconds() // 60)
+    sign = "+" if minutes >= 0 else "-"
+    return f"UTC{sign}{abs(minutes) // 60:02d}:{abs(minutes) % 60:02d}"
+
+
+def clock(dt: datetime, tzname: str, with_date: bool = True) -> str:
+    """'2026-03-10 06:47 (UTC+01:00)': local clock time, with the offset that
+    was applied on that date, so summer time is never guessed at."""
+    at = local(dt, tzname)
+    stamp = at.strftime("%Y-%m-%d %H:%M" if with_date else "%H:%M")
+    return f"{stamp} ({offset_label(dt, tzname)})"
+
+
+def instant(date_iso: str, hour: float, tzname: str) -> datetime:
+    """The UTC instant of an hour on the clock, on a calendar date, there."""
+    y, m, d = (int(x) for x in date_iso[:10].split("-"))
+    naive = datetime(y, m, d) + timedelta(hours=hour)
+    return naive.replace(tzinfo=ZoneInfo(tzname)).astimezone(timezone.utc)
+
+
+def julian_day(dt: datetime) -> float:
+    import swisseph as swe
+    dt = dt.astimezone(timezone.utc)
+    return swe.julday(dt.year, dt.month, dt.day,
+                      dt.hour + dt.minute / 60 + dt.second / 3600)
+
+
+def locate(text: str) -> dict:
+    """A place someone named, or coordinates they pasted, as a point on the
+    earth with its timezone. Raises ValueError when it cannot be found."""
+    from . import coords
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("no place given")
+    try:
+        c = coords.parse(text)
+        return {"name": str(c), "latitude": c.latitude,
+                "longitude": c.longitude,
+                "timezone": timezone_for(c.latitude, c.longitude),
+                "other_matches": []}
+    except coords.CoordinateError:
+        pass
+    # "Lisbon, PT" or "Lisbon, Portugal": the part after the comma narrows it.
+    city, _, rest = text.partition(",")
+    hits = search_places(city.strip(), 25)
+    want = rest.strip().lower()
+    if want and hits:
+        names = {c["iso"].lower(): c["name"].lower()
+                 for c in _gc.get_countries().values()}
+        narrowed = [h for h in hits if want in (h.country.lower(),
+                                                names.get(h.country.lower(), ""))]
+        hits = narrowed or hits
+    if not hits:
+        raise ValueError(
+            f"no city called {text!r} in the built-in list. Try the nearest "
+            "larger town, or paste coordinates from a map.")
+    best = hits[0]
+    return {"name": f"{best.name}, {best.country}", "latitude": best.latitude,
+            "longitude": best.longitude,
+            "timezone": timezone_for(best.latitude, best.longitude),
+            "other_matches": [f"{h.name}, {h.country}" for h in hits[1:4]]}

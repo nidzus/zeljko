@@ -120,6 +120,11 @@ class Store:
                             " REFERENCES account(id) ON DELETE CASCADE")
         self.db.execute("CREATE INDEX IF NOT EXISTS idx_person_account"
                         " ON person(account_id)")
+        # From before a profile could say where the person is now.
+        for col, kind in (("now_place", "TEXT"), ("now_lat", "REAL"),
+                          ("now_lon", "REAL"), ("now_tz", "TEXT")):
+            if col not in cols:
+                self.db.execute(f"ALTER TABLE person ADD COLUMN {col} {kind}")
 
     def _owner_account(self) -> int:
         row = self.db.execute(
@@ -238,6 +243,37 @@ class Store:
                 self.db.execute("UPDATE person SET relation=? WHERE id=?",
                                 (relation, person_id))
             self.db.commit()
+
+    def set_current_place(self, person_id: int, name: str | None,
+                          latitude: float | None = None,
+                          longitude: float | None = None,
+                          timezone_name: str | None = None) -> None:
+        """Where the person is now. A name of None clears it, and day-scale
+        answers go back to the birthplace. Like the birthplace, this is
+        deliberately not encrypted in the shared database: the calculations
+        need it."""
+        self._own_person(person_id)
+        if name is not None and None in (latitude, longitude, timezone_name):
+            raise ValueError("a place needs coordinates and a timezone")
+        if name is None:
+            latitude = longitude = timezone_name = None
+        with self._lock:
+            self.db.execute(
+                "UPDATE person SET now_place=?, now_lat=?, now_lon=?, now_tz=?"
+                " WHERE id=?",
+                (name, latitude, longitude, timezone_name, person_id))
+            self.db.commit()
+
+    def current_place(self, person_id: int) -> dict | None:
+        """Where the person is now, or None when it was never said."""
+        self._own_person(person_id)
+        row = self.db.execute(
+            "SELECT now_place, now_lat, now_lon, now_tz FROM person WHERE id=?",
+            (person_id,)).fetchone()
+        if row is None or row["now_place"] is None:
+            return None
+        return {"name": row["now_place"], "latitude": row["now_lat"],
+                "longitude": row["now_lon"], "timezone": row["now_tz"]}
 
     def holdings(self, person_id: int) -> dict:
         """How much is stored under a profile: what removing it would take."""
@@ -541,6 +577,10 @@ class Store:
             f"  timezone {row['timezone_name']},"
             f" offset {row['utc_offset_hours']:+.4f}h{lmt}",
             f"  time confidence: {row['time_confidence']}",
+            *([f"NOW IN: {now['name']} (timezone {now['timezone']}). Day-scale"
+               " tools answer for this place, in its clock time."]
+              if (now := self.current_place(person_id)) else
+              ["NOW IN: not recorded; day-scale tools assume the birthplace."]),
             f"CHART: ayanamsa {row['ayanamsa']}, whole-sign houses",
             f"  Lagna {ephemeris.dms(chart.ascendant.degrees_in_sign)}"
             f" {chart.ascendant.sign} ({chart.ascendant.sign_english}),"

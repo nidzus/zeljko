@@ -105,7 +105,7 @@ try:
     send({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
     listed = read()
     names = sorted(t["name"] for t in listed["result"]["tools"])
-    check("all thirty tools are offered over the wire", len(names) == 30,
+    check("all thirty-one tools are offered over the wire", len(names) == 31,
           ", ".join(names))
 
     send({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
