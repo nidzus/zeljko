@@ -48,9 +48,13 @@ check("a second start leaves the folder as it was",
       note.read_text(encoding="utf-8") == "mine")
 os.environ["JYOTISHA_HOME"] = "${user_config.data_folder}"
 os.environ["JYOTISHA_BACKUPS"] = "${user_config.backup_folder}"
+# The packed extension has no link file beside it. This copy may have one,
+# naming a data folder of its own, so it is set aside for this check.
+real_link, paths.LINK = paths.LINK, scratch / "no-link.json"
 check("a setting that was never filled in falls back to the default",
       paths.data_dir() == paths.DEFAULT_DATA
       and paths._env("JYOTISHA_BACKUPS") is None)
+paths.LINK = real_link
 os.environ["JYOTISHA_HOME"] = str(home)
 os.environ["JYOTISHA_BACKUPS"] = str(scratch / "backups")
 check("the backup folder comes from the extension's setting",
