@@ -13,7 +13,8 @@ suites = ["verify_ephemeris.py", "verify_timeplace.py",
           "verify_chartsvg.py", "verify_shani.py", "verify_personalday.py", "verify_divisional.py",
           "verify_shadbala.py", "verify_contacts.py", "verify_karaka.py",
           "verify_mcp.py", "verify_mcp_stdio.py",
-          "verify_accounts.py", "verify_remote.py", "verify_extension.py"]
+          "verify_accounts.py", "verify_remote.py", "verify_extension.py",
+          "verify_repair.py"]
 failed = []
 for s in suites:
     r = subprocess.run([PY, s], capture_output=True, text=True)

@@ -109,8 +109,8 @@ and suggest it after a session that added a lot.
 """
 
 mcp = MCPServer(
-    name="jyotisha",
-    title="Jyotisha advisor",
+    name="zeljko",
+    title="Zeljko, the jyotisha advisor",
     instructions=INSTRUCTIONS,
 )
 

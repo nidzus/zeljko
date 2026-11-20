@@ -63,7 +63,7 @@ def freeze() -> Path:
          "--specpath", WORK,
          # Files the code reads from beside itself (store.py, guidance.py).
          "--add-data", f"{ROOT / 'backend' / 'schema.sql'}{sep}backend",
-         "--add-data", f"{ROOT / 'jyotisha-plugin' / 'skills'}{sep}jyotisha-plugin/skills",
+         "--add-data", f"{ROOT / 'zeljko-plugin' / 'skills'}{sep}zeljko-plugin/skills",
          # Data carried inside packages: timezone shapes, cities, tz rules.
          "--collect-data", "timezonefinder", "--collect-data", "geonamescache",
          "--collect-data", "tzdata",

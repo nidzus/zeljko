@@ -11,11 +11,11 @@ can see over time whether the advice is any good.
 
 ## What it does
 
-- **Set up a profile (`/jyotisha:onboard`):** birth data, how well the birth
+- **Set up a profile (`/zeljko:onboard`):** birth data, how well the birth
   time is actually known, and the life events that can later narrow it down.
-- **Ask (`/jyotisha:ask`):** a verdict in plain words first, then the timing,
+- **Ask (`/zeljko:ask`):** a verdict in plain words first, then the timing,
   then the reasoning — each technical term introduced by what it means.
-- **Journal (`/jyotisha:journal`):** past advice, what you chose, and how it
+- **Journal (`/zeljko:journal`):** past advice, what you chose, and how it
   turned out.
 - **Exact computation:** positions, houses and ayanamsas from the Swiss
   Ephemeris; Vimshottari dashas; transits, stations and ingresses;
@@ -63,7 +63,7 @@ rest of this section installs. You need:
 
 > Install Zeljko, the jyotisha advisor, from https://github.com/nidzus/zeljko into
 > my home folder: clone it, run `jyotisha.py install` with Python 3.11, then
-> start `/jyotisha:onboard` for me.
+> start `/zeljko:onboard` for me.
 
 **By hand, on Windows:**
 
@@ -86,8 +86,8 @@ python3.11 jyotisha.py install
 
 Install builds the environment (`.venv`), creates your data folder, points
 Claude's config files at both folders, turns on the privacy check and runs
-every test. Afterwards double-click **Ask Jyotisha** (on a Mac, in the `Mac`
-folder) and type `/jyotisha:onboard`.
+every test. Afterwards double-click **Ask Zeljko** (on a Mac, in the `Mac`
+folder) and type `/zeljko:onboard`.
 
 To keep your data somewhere else, run `jyotisha.py init <folder>` and then
 `jyotisha.py repair` before you start.
@@ -99,7 +99,7 @@ folder on Windows, `.command` in `Mac/` on a Mac.
 
 | File | Does |
 | --- | --- |
-| Ask Jyotisha | opens Claude Code with the plugin loaded |
+| Ask Zeljko | opens Claude Code with the plugin loaded |
 | Open journal | starts the web app and opens the journal in a browser |
 | Check everything | runs every test and the privacy check |
 | Install or repair | rebuilds `.venv` if it is missing or broken, then checks |
@@ -114,9 +114,9 @@ Inside Claude Code:
 
 | Skill | For |
 | --- | --- |
-| `/jyotisha:onboard` | set up a profile: birth data, time confidence, life events |
-| `/jyotisha:ask` | ask about a decision and get a timed answer |
-| `/jyotisha:journal` | review past advice, record choices and outcomes |
+| `/zeljko:onboard` | set up a profile: birth data, time confidence, life events |
+| `/zeljko:ask` | ask about a decision and get a timed answer |
+| `/zeljko:journal` | review past advice, record choices and outcomes |
 
 The plugin bundles the MCP server, so there is nothing else to configure. To
 use the tools from plain Claude Desktop chat too, double-click
@@ -204,7 +204,7 @@ Pages).
   `~/jyotisha-data`) and the database appears with the first profile. If you
   already use the full app, the extension finds the same folder and the same
   data. Use one or the other in Claude Desktop, not both: with the extension
-  installed, remove the `jyotisha` entry that `Add to Claude Desktop` wrote,
+  installed, remove the `zeljko` entry that `Add to Claude Desktop` wrote,
   or every tool appears twice.
 - **Backups.** "Back up my data" writes a dated copy to the backup folder
   from the extension's settings, unless `settings.json` in the data folder
@@ -256,7 +256,7 @@ because nobody can unlock them.
 
 **Without the plugin.** Friends have no skills installed. The server's
 instructions send Claude to its `guidance` tool, which serves the same text as
-the three skills in `jyotisha-plugin/`; they are also offered as prompts. Edit
+the three skills in `zeljko-plugin/`; they are also offered as prompts. Edit
 a skill and both routes change.
 
 **Trying it on this computer.** Start `Start shared server` and leave it

@@ -1,5 +1,5 @@
 @echo off
-title Jyotisha - shared server
+title Zeljko - shared server
 cd /d "%~dp0"
 if not exist ".venv\Scripts\python.exe" (
   echo The environment is missing. Double-click "Install or repair.bat" first.

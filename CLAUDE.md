@@ -23,7 +23,7 @@ into their data folder. It is never committed.
 ## How it runs
 
 - The live interface is Claude itself, through the MCP server in
-  `backend/mcp_server.py` and the plugin in `jyotisha-plugin/`. This was
+  `backend/mcp_server.py` and the plugin in `zeljko-plugin/`. This was
   chosen so nothing is billed beyond the Claude subscription.
 - `backend/advisor.py` is the paid API route. It is kept working and tested
   but is not used day to day. Do not make features depend on an API key
@@ -86,18 +86,28 @@ into their data folder. It is never committed.
 
 ## Paths
 
-- `.mcp.json` and `jyotisha-plugin/.mcp.json` hold this machine's absolute
+- `.mcp.json` and `zeljko-plugin/.mcp.json` hold this machine's absolute
   paths, so they are written on each machine by `tools/repair_paths.py`
   (through `jyotisha.py repair`, and by install) and are not committed. Do not
   edit them by hand.
 - The repair also corrects the installed plugin copy at
-  `~/.claude/skills/jyotisha/.mcp.json` and an existing `jyotisha` entry in
+  `~/.claude/skills/zeljko/` (its files refreshed from `zeljko-plugin/`, its
+  `.mcp.json` repointed) and an existing `zeljko` entry in
   Claude Desktop's `claude_desktop_config.json` (on Windows the ordinary
   location, the Microsoft Store one and the newer
   `%LOCALAPPDATA%\Claude-Data\claude_*`; on a Mac `~/Library/Application
   Support/Claude`). It copies that file to `.bak-<date>` first, adds an entry
   only with `--desktop` (the `Add to Claude Desktop` files), and writes
-  nothing when the paths already agree.
+  nothing when the paths already agree. `verify_repair.py` covers it.
+- Names: what Claude shows is Zeljko — the MCP server and the plugin are
+  `zeljko`, the skills `zeljko:ask`, `zeljko:journal`, `zeljko:onboard`.
+  Until 2026-11 they were `jyotisha`; the repair renames an old `jyotisha`
+  server entry that runs this app (never duplicates it) and moves
+  `~/.claude/skills/jyotisha` to `zeljko`, deleting nothing. The internal
+  names stay `jyotisha` on purpose: `jyotisha.py`, `jyotisha.db`,
+  `.jyotisha.json`, the `JYOTISHA_*` variables and the default
+  `~/jyotisha-data`, because existing installs and the extension find their
+  data through them.
 - A venv is not relocatable. If the app folder moves, `Repair paths` fixes
   the configs and `Install or repair` rebuilds `.venv`.
 
@@ -210,7 +220,7 @@ into their data folder. It is never committed.
 - Account management goes through `tools/accounts.py`, never by editing
   `shared.db`. It has no key and cannot read a journal.
 - The friends' guidance is served from the three skill files in
-  `jyotisha-plugin/skills/` by `backend/guidance.py`. Edit the skill, not a
+  `zeljko-plugin/skills/` by `backend/guidance.py`. Edit the skill, not a
   copy.
 - `Back up data` covers the family database only. `shared.db` has no backup
   routine yet.

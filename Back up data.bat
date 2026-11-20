@@ -1,5 +1,5 @@
 @echo off
-title Jyotisha - backup
+title Zeljko - backup
 cd /d "%~dp0"
 
 rem Where the copies go is "backup_folder" in settings.json in your data

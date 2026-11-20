@@ -1,6 +1,6 @@
 """The onboarding, ask and journal guidance, for people without the plugin.
 
-The three skills in jyotisha-plugin/ are the single source. A friend using the
+The three skills in zeljko-plugin/ are the single source. A friend using the
 shared server has no plugin, so the server hands out the same text itself, as
 prompts and through the `guidance` tool. Nothing is restated here: edit the
 skill and both routes change. The voice is not in these files at all -- that
@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-SKILLS = Path(__file__).resolve().parent.parent / "jyotisha-plugin" / "skills"
+SKILLS = Path(__file__).resolve().parent.parent / "zeljko-plugin" / "skills"
 TOPICS = ("onboard", "ask", "journal")
 
 # The skills address Claude Code. Where a line only makes sense there, this

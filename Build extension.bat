@@ -1,5 +1,5 @@
 @echo off
-title Jyotisha - build the Claude Desktop extension
+title Zeljko - build the Claude Desktop extension
 cd /d "%~dp0"
 
 rem Builds dist\zeljko-windows.mcpb for trying a change on this computer.

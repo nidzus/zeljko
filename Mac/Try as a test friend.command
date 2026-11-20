@@ -8,9 +8,9 @@ echo
 read -r -p "Which test friend, A or B? " who
 case "$who" in [bB]*) WHO=b ;; *) WHO=a ;; esac
 CONFIG="$PWD/tools/friend-$WHO.mcp.json"
-WORK="${TMPDIR:-/tmp}/jyotisha-friend-$WHO"
+WORK="${TMPDIR:-/tmp}/zeljko-friend-$WHO"
 mkdir -p "$WORK" && cd "$WORK" || exit 1
 echo
-echo "In Claude Code type  /mcp  , choose jyotisha-$WHO and Authenticate."
+echo "In Claude Code type  /mcp  , choose zeljko-$WHO and Authenticate."
 echo
 claude --strict-mcp-config --mcp-config "$CONFIG"

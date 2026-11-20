@@ -196,7 +196,7 @@ async function renderJournal() {
   const box = $("#journal");
   if (!rows.length) {
     box.innerHTML = '<p class="hint">Nothing recorded yet. Ask Claude a ' +
-      'question with the jyotisha tools connected, and the judgement lands ' +
+      'question with the Zeljko tools connected, and the judgement lands ' +
       'here — then come back to note what you actually did, and later ' +
       'how it turned out.</p>';
     return;

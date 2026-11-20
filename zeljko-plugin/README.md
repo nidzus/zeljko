@@ -1,6 +1,6 @@
-# jyotisha (Claude Code plugin)
+# zeljko (Claude Code plugin)
 
-A jyotisha advisor for decisions, running against a local database.
+Zeljko, a jyotisha advisor for decisions, running against a local database.
 
 All astronomy is computed by Swiss Ephemeris. No model ever produces a
 position, a date, or a dasha boundary — and the tools refuse to return claims
@@ -9,16 +9,16 @@ the birth time cannot support, rather than leaving that to a prompt.
 ## Load it
 
 ```
-claude --plugin-dir ./jyotisha-plugin
+claude --plugin-dir ./zeljko-plugin
 ```
 
 ## Skills
 
 | Skill | For |
 | --- | --- |
-| `/jyotisha:onboard` | set up a profile: birth data, time confidence, life events |
-| `/jyotisha:ask` | ask about a decision and get a timed answer |
-| `/jyotisha:journal` | review past advice, record choices and outcomes |
+| `/zeljko:onboard` | set up a profile: birth data, time confidence, life events |
+| `/zeljko:ask` | ask about a decision and get a timed answer |
+| `/zeljko:journal` | review past advice, record choices and outcomes |
 
 The MCP server is bundled and starts automatically. Its `.mcp.json` holds
 this machine's folder paths, so it is not in the repository: `jyotisha.py

@@ -1,5 +1,5 @@
 @echo off
-title Jyotisha - install or repair
+title Zeljko - install or repair
 cd /d "%~dp0"
 
 rem Builds .venv if it is missing or broken, links the data folder, points
@@ -25,7 +25,7 @@ if not defined PY (
 if not defined PY goto :nopython
 
 echo ============================================================
-echo  Jyotisha advisor - install or repair
+echo  Zeljko - install or repair
 echo ============================================================
 echo.
 %PY% jyotisha.py install %FORCE%

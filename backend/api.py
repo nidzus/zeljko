@@ -19,7 +19,7 @@ from . import coords, dasha, ephemeris, timeplace, transits
 from .confidence import TimeConfidence
 from .store import CLAIM_KINDS, Store
 
-app = FastAPI(title="Jyotisha advisor", docs_url="/api/docs")
+app = FastAPI(title="Zeljko", docs_url="/api/docs")
 
 FRONTEND = Path(__file__).parent.parent / "frontend"
 

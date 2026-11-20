@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "jyotisha-b": {
+    "zeljko-b": {
       "type": "http",
       "url": "http://localhost:8765/mcp"
     }

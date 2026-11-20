@@ -242,7 +242,7 @@ def _page(title: str, body: str, status: int = 200) -> HTMLResponse:
 
 def _expired() -> HTMLResponse:
     return _page("This sign-in has expired",
-                 "<p>Go back to Claude and connect the Jyotisha connector "
+                 "<p>Go back to Claude and connect the Zeljko connector "
                  "again. Nothing was changed.</p>", 400)
 
 
@@ -270,7 +270,7 @@ def _form(tx: str, action: str, fields: str, button: str) -> str:
 
 
 def _signin_page(tx: str, email: str = "", message: str = "") -> HTMLResponse:
-    return _page("Sign in to Jyotisha", _error(message) + _form(
+    return _page("Sign in to Zeljko", _error(message) + _form(
         tx, "signin",
         _field("Email", "email", "email", email, "autofocus")
         + _field("Password", "password", "password"), "Sign in")
@@ -434,7 +434,7 @@ class Sessions:
         token = get_access_token()
         g = self.accounts.grant("access", token.token) if token else None
         if g is None:
-            raise ToolError("Not signed in. Reconnect the Jyotisha connector "
+            raise ToolError("Not signed in. Reconnect the Zeljko connector "
                             "and sign in again.")
         now = time.time()
         with self._lock:
@@ -463,7 +463,7 @@ def build(accounts: Accounts, public_url: str) -> MCPServer:
     public_url = public_url.rstrip("/")
     provider = Provider(accounts, public_url)
     server = MCPServer(
-        name="jyotisha", title="Jyotisha advisor", instructions=INSTRUCTIONS,
+        name="zeljko", title="Zeljko, the jyotisha advisor", instructions=INSTRUCTIONS,
         auth_server_provider=provider,
         auth=AuthSettings(
             issuer_url=public_url,
@@ -500,7 +500,7 @@ def main() -> None:
         security = TransportSecuritySettings(
             allowed_hosts=[public.netloc], allowed_origins=[public_url])
 
-    print(f"Shared Jyotisha server. Database: {accounts.path}")
+    print(f"Shared Zeljko server. Database: {accounts.path}")
     print(f"Connector address: {public_url}/mcp")
     print("Close this window to stop it.")
     anyio.run(functools.partial(

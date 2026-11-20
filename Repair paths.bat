@@ -1,5 +1,5 @@
 @echo off
-title Jyotisha - repair paths
+title Zeljko - repair paths
 cd /d "%~dp0"
 
 echo Pointing the Claude config files at the app and data folders.

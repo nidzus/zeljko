@@ -1,5 +1,5 @@
 @echo off
-title Jyotisha - add to Claude Desktop
+title Zeljko - add to Claude Desktop
 cd /d "%~dp0"
 
 echo Adding the advisor to Claude Desktop, and pointing the Claude config files

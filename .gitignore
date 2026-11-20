@@ -15,7 +15,7 @@ CLAUDE.local.md
 
 # Written on each machine by tools/repair_paths.py; they hold its paths.
 /.mcp.json
-/jyotisha-plugin/.mcp.json
+/zeljko-plugin/.mcp.json
 
 # The environment. Rebuilt by "Install or repair"; never tracked.
 .venv/

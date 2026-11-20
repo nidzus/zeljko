@@ -46,7 +46,7 @@ from tools import repair_paths
 config = repair_paths.wanted()
 written = ROOT / ".mcp.json"
 if written.exists():
-    entry = json.loads(written.read_text(encoding="utf-8"))["mcpServers"]["jyotisha"]
+    entry = json.loads(written.read_text(encoding="utf-8"))["mcpServers"][repair_paths.SERVER]
     check(".mcp.json on this machine points at these folders",
           entry["command"] == config["command"] and entry["env"] == config["env"],
           entry["command"])
